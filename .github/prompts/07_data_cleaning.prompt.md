@@ -1,0 +1,1 @@
+Detect duplicates, missing values, empty rows, spaces, invalid numbers/dates, capitalization.

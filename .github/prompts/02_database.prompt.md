@@ -1,0 +1,1 @@
+Design ERD and MySQL schema with users, roles, datasets, dataset_columns, cleaning_logs, analysis_results, chart_settings, ml_predictions, reports, activity_logs.

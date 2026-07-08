@@ -1,0 +1,1 @@
+Build login/logout, admin, teacher, student auth using Student ID as username/password on first login.

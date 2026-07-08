@@ -1,0 +1,1 @@
+Implement upload workflow: validate template, metadata, preview, cleaning summary, save.

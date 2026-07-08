@@ -1,0 +1,1 @@
+Create responsive Bootstrap dashboard with cards and recent activity.

@@ -1,0 +1,1 @@
+Create the project skeleton only: folders, config, database connection, helpers, assets, uploads, index.php.

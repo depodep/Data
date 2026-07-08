@@ -1,0 +1,96 @@
+body {
+  background: linear-gradient(180deg, #f5f7fb 0%, #eef2f7 100%);
+}
+
+.app-auth-shell,
+.app-admin-shell {
+  min-height: 100vh;
+}
+
+.app-card {
+  border-radius: 1.25rem;
+}
+
+.app-brand-icon {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 1rem;
+  background: linear-gradient(135deg, #1d4ed8, #2563eb);
+  color: #fff;
+  font-size: 1.75rem;
+}
+
+.app-navbar {
+  background: linear-gradient(135deg, #0f172a, #1e293b);
+}
+
+.app-dashboard-shell,
+.app-library-shell {
+  min-height: 100vh;
+}
+
+.dashboard-hero {
+  background: radial-gradient(circle at top right, rgba(37, 99, 235, 0.18), transparent 30%), linear-gradient(135deg, #ffffff 0%, #f8fbff 100%);
+  border-radius: 1.5rem;
+}
+
+.quick-actions-card {
+  border-radius: 1.5rem;
+}
+
+.stat-card {
+  border-radius: 1.25rem;
+}
+
+.stat-icon {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  margin-bottom: 1rem;
+}
+
+.stat-value {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.stat-label {
+  color: #64748b;
+  font-size: 0.875rem;
+  margin-top: 0.35rem;
+}
+
+.activity-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.activity-item {
+  display: grid;
+  grid-template-columns: 12px 1fr;
+  gap: 0.85rem;
+  align-items: start;
+}
+
+.activity-dot {
+  width: 12px;
+  height: 12px;
+  margin-top: 0.4rem;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #2563eb, #0ea5e9);
+  box-shadow: 0 0 0 6px rgba(37, 99, 235, 0.08);
+}
+
+.dataset-card {
+  border-radius: 1.25rem;
+}
+
+.table > :not(caption) > * > * {
+  vertical-align: middle;
+}
