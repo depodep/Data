@@ -147,7 +147,21 @@ $canImport = user_has_role(['administrator','teacher']) && ($dataset['processing
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-  <script>window.__DATASET_ID = <?php echo json_encode($datasetId, JSON_NUMERIC_CHECK); ?>;</script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script>
+    window.__DATASET_ID = <?php echo json_encode($datasetId, JSON_NUMERIC_CHECK); ?>;
+    window.__DATASET_META = <?php echo json_encode([
+      'dataset_id' => (int) $dataset['dataset_id'],
+      'dataset_name' => $dataset['dataset_name'],
+      'owner_name' => $dataset['owner_name'] ?? null,
+      'record_count' => (int) $dataset['record_count'],
+      'column_count' => (int) $dataset['column_count'],
+      'uploaded_at' => $dataset['uploaded_at'] ?? null,
+      'file_path' => $dataset['file_path'] ?? null,
+      'file_size' => isset($dataset['file_size']) ? (int) $dataset['file_size'] : null,
+      'processing_status' => $dataset['processing_status'] ?? null,
+    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_NUMERIC_CHECK); ?>;
+  </script>
   <script src="/Data/assets/js/datasets_workspace.js"></script>
 </body>
 </html>

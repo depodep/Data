@@ -94,3 +94,84 @@ body {
 .table > :not(caption) > * > * {
   vertical-align: middle;
 }
+
+.analysis-workspace-dialog {
+  max-width: 95vw;
+  width: 95vw;
+  margin: 1rem auto;
+}
+
+.analysis-workspace-modal {
+  min-height: 90vh;
+  max-height: 90vh;
+  overflow: hidden;
+  border-radius: 1.5rem;
+}
+
+.analysis-workspace-modal .modal-header,
+.analysis-workspace-modal .modal-footer {
+  position: sticky;
+  z-index: 5;
+  background: #fff;
+}
+
+.analysis-workspace-modal .modal-header {
+  top: 0;
+}
+
+.analysis-workspace-modal .modal-footer {
+  bottom: 0;
+}
+
+.analysis-workspace-modal .modal-body {
+  overflow-y: auto;
+  background: linear-gradient(180deg, #f8fbff 0%, #eef3fb 100%);
+}
+
+.workspace-hero {
+  background: radial-gradient(circle at top right, rgba(37, 99, 235, 0.16), transparent 28%), linear-gradient(135deg, #ffffff 0%, #f7fbff 100%);
+  border-radius: 1.5rem;
+}
+
+.workspace-sidebar {
+  position: sticky;
+  top: 1rem;
+}
+
+.workspace-stat-card,
+.workspace-chart-card,
+.workspace-section-card {
+  border-radius: 1.25rem;
+}
+
+.workspace-preview-shell {
+  overflow: hidden;
+}
+
+.workspace-preview-controls {
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.workspace-preview-table {
+  overflow: auto;
+  max-height: 420px;
+}
+
+.workspace-mini-kpi {
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.75);
+}
+
+.workspace-chart-placeholder {
+  min-height: 260px;
+  display: grid;
+  place-items: center;
+  border: 1px dashed rgba(148, 163, 184, 0.45);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.workspace-generate-note {
+  font-size: 0.875rem;
+  color: #64748b;
+}
