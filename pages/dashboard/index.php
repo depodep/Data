@@ -24,48 +24,34 @@ $isTeacher = ($user['role_slug'] ?? '') === 'teacher';
     <link href="/Data/assets/css/app.css" rel="stylesheet">
 </head>
 <body class="app-dashboard-shell">
-    <nav class="navbar navbar-expand-lg navbar-dark app-navbar px-3">
-        <a class="navbar-brand fw-semibold" href="/Data/pages/dashboard/index.php"><?php echo e(APP_NAME); ?></a>
-        <div class="ms-auto d-flex gap-2 flex-wrap">
-            <a class="btn btn-outline-light btn-sm" href="/Data/pages/dashboard/index.php">Dashboard</a>
-            <?php if ($isAdministrator): ?>
-                <a class="btn btn-outline-light btn-sm" href="/Data/pages/admin/users/index.php">Users</a>
-            <?php endif; ?>
-            <?php if ($isAdministrator || $isTeacher): ?>
-                <a class="btn btn-outline-light btn-sm" href="/Data/pages/datasets/index.php">Dataset Library</a>
-            <?php endif; ?>
-            <a class="btn btn-outline-light btn-sm" href="/Data/pages/auth/logout.php">Logout</a>
-        </div>
-    </nav>
-
-    <main class="container-fluid py-4">
-        <div class="row g-4 mb-2">
-            <div class="col-12 col-xl-8">
-                <div class="dashboard-hero card border-0 shadow-sm">
-                    <div class="card-body p-4 p-md-5">
-                        <p class="text-uppercase text-info fw-semibold small mb-2">Overview</p>
-                        <h1 class="display-6 fw-bold mb-2">Welcome back, <?php echo e($displayName); ?></h1>
-                        <p class="lead text-muted mb-0">Role: <?php echo e($roleName); ?>. Monitor datasets, review recent activity, and jump into the library.</p>
-                    </div>
+    <div class="app-layout-wrapper">
+        <?php 
+        $activePage = 'dashboard';
+        require_once __DIR__ . '/../../includes/sidebar.php'; 
+        ?>
+        
+        <div class="app-main-container">
+            <header class="app-top-header">
+                <button class="sidebar-toggler" id="sidebarToggler">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+                <div class="ms-auto d-flex align-items-center gap-2">
+                    <span class="text-muted small">Logged in as: <strong><?php echo e($displayName); ?></strong></span>
                 </div>
-            </div>
-            <div class="col-12 col-xl-4">
-                <div class="card border-0 shadow-sm h-100 quick-actions-card">
-                    <div class="card-body p-4">
-                        <h2 class="h5 mb-3">Quick Actions</h2>
-                        <div class="d-grid gap-2">
-                            <?php if ($isAdministrator): ?>
-                                <a class="btn btn-primary" href="/Data/pages/admin/users/index.php"><i class="fa-solid fa-users me-2"></i>Manage Users</a>
-                            <?php endif; ?>
-                            <?php if ($isAdministrator || $isTeacher): ?>
-                                <a class="btn btn-outline-primary" href="/Data/pages/datasets/index.php"><i class="fa-solid fa-database me-2"></i>Open Dataset Library</a>
-                            <?php endif; ?>
-                            <a class="btn btn-outline-secondary" href="/Data/pages/auth/logout.php"><i class="fa-solid fa-right-from-bracket me-2"></i>Logout</a>
+            </header>
+
+            <main class="container-fluid py-4">
+                <div class="row g-4 mb-2">
+                    <div class="col-12">
+                        <div class="dashboard-hero card border-0 shadow-sm">
+                            <div class="card-body p-4 p-md-5">
+                                <p class="text-uppercase text-info fw-semibold small mb-2">Overview</p>
+                                <h1 class="display-6 fw-bold mb-2">Welcome back, <?php echo e($displayName); ?></h1>
+                                <p class="lead text-muted mb-0">Role: <?php echo e($roleName); ?>. Monitor datasets, review recent activity, and jump into the library.</p>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
 
         <div class="row g-4">
             <div class="col-12">
@@ -139,7 +125,9 @@ $isTeacher = ($user['role_slug'] ?? '') === 'teacher';
                 </div>
             </div>
         </div>
-    </main>
+            </main>
+        </div>
+    </div>
 
     <script src="/Data/assets/js/dashboard.js"></script>
 </body>

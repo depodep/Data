@@ -29,9 +29,7 @@ if ($dataset === false) {
     json_response(['success' => false, 'message' => 'Dataset not found.'], 404);
 }
 
-$uploadsDir = __DIR__ . '/../../uploads';
-$stored = $dataset['stored_filename'] ?? null;
-$filePath = $stored ? $uploadsDir . DIRECTORY_SEPARATOR . $stored : null;
+$filePath = dataset_absolute_path((string) ($dataset['file_path'] ?? ''));
 
 if (empty($filePath) || !is_file($filePath) || !is_readable($filePath)) {
     json_response(['success' => false, 'message' => 'Stored CSV file missing or unreadable.'], 500);

@@ -48,6 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
     openWorkspaceBtn: document.getElementById('openWorkspaceBtn'),
     runCleanBtn: document.getElementById('runCleanBtn'),
     previewCleanBtn: document.getElementById('previewCleanBtn'),
+    importBtn: document.getElementById('importBtn'),
     runAnalyzeBtn: document.getElementById('runAnalyzeBtn'),
     runVisualBtn: document.getElementById('runVisualBtn'),
     runPredictBtn: document.getElementById('runPredictBtn'),
@@ -1254,6 +1255,32 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
+  const runImport = async () => {
+    if (!state.datasetId) return;
+    if (els.importBtn) els.importBtn.disabled = true;
+    try {
+      const form = new FormData();
+      form.append('dataset_id', String(state.datasetId));
+      form.append('csrf_token', document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '');
+      const response = await fetch('/Data/api/datasets/import.php', { method: 'POST', body: form, credentials: 'same-origin' });
+      const json = await response.json();
+      if (!json.success) {
+        showAlert(json.message || 'Import failed', 'danger');
+        return;
+      }
+      showAlert('Import completed successfully.', 'success');
+      if (els.importBtn) {
+        els.importBtn.classList.add('d-none');
+      }
+      await loadPreview();
+      await loadAnalysis();
+    } catch (error) {
+      showAlert(error.message || 'Import failed', 'danger');
+    } finally {
+      if (els.importBtn) els.importBtn.disabled = false;
+    }
+  };
+
   const runVisualizationApi = async () => {
     if (!state.datasetId) return;
     if (els.runVisualBtn) els.runVisualBtn.disabled = true;
@@ -1386,6 +1413,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const bindEvents = () => {
     els.runCleanBtn?.addEventListener('click', runCleaning);
     els.previewCleanBtn?.addEventListener('click', loadCleaningPreview);
+    els.importBtn?.addEventListener('click', runImport);
     els.runAnalyzeBtn?.addEventListener('click', loadAnalysis);
     els.runVisualBtn?.addEventListener('click', runVisualizationApi);
     els.runPredictBtn?.addEventListener('click', runPrediction);

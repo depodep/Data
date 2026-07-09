@@ -122,7 +122,7 @@ if ($mode === 'clean') {
         $options['missing_strategy'] = $_POST['missing_strategy'];
     }
     $encodedOptions = json_encode($options, JSON_UNESCAPED_UNICODE);
-    $cmd = escapeshellcmd(PHP_BINARY) . ' ' . escapeshellarg($script) . ' ' . escapeshellarg($destination) . ' ' . escapeshellarg($cleanedPath) . ' ' . escapeshellarg($encodedOptions);
+    $cmd = escapeshellcmd('python') . ' ' . escapeshellarg($script) . ' ' . escapeshellarg($destination) . ' ' . escapeshellarg($cleanedPath) . ' ' . escapeshellarg($encodedOptions);
     // attempt to run
     $raw = null; $out = null; $exit = 0;
     @exec($cmd . ' 2>&1', $out, $exit);

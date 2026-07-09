@@ -6,6 +6,24 @@ require_once __DIR__ . '/../../includes/bootstrap.php';
 require_login();
 
 $csrf = csrf_token();
+$user = current_user();
+$displayName = $user['full_name'] ?? 'User';
+
+// Determine active subpage for sidebar
+$activePage = 'datasets';
+$activeSubPage = 'search';
+
+if (isset($_GET['upload'])) {
+    $activeSubPage = 'upload';
+} elseif (isset($_GET['filter']) && $_GET['filter'] === 'my') {
+    $activeSubPage = 'my_datasets';
+} elseif (isset($_GET['scope']) && $_GET['scope'] === 'shared') {
+    $activeSubPage = 'shared_datasets';
+} elseif (isset($_GET['status']) && $_GET['status'] === 'archived') {
+    $activeSubPage = 'archived_datasets';
+} elseif (isset($_GET['all']) || $user['role_slug'] === 'administrator') {
+    $activeSubPage = 'all_datasets';
+}
 ?>
 <!doctype html>
 <html lang="en">
@@ -19,15 +37,21 @@ $csrf = csrf_token();
   <link href="/Data/assets/css/app.css" rel="stylesheet">
 </head>
 <body class="app-admin-shell">
-  <nav class="navbar navbar-expand-lg navbar-dark app-navbar px-3">
-    <a class="navbar-brand fw-semibold" href="/Data/pages/dashboard/index.php"><?php echo e(APP_NAME); ?></a>
-    <div class="ms-auto d-flex gap-2">
-      <a class="btn btn-outline-light btn-sm" href="/Data/pages/auth/logout.php">Logout</a>
-    </div>
-  </nav>
+  <div class="app-layout-wrapper">
+    <?php require_once __DIR__ . '/../../includes/sidebar.php'; ?>
+    
+    <div class="app-main-container">
+      <header class="app-top-header">
+        <button class="sidebar-toggler" id="sidebarToggler">
+          <i class="fa-solid fa-bars"></i>
+        </button>
+        <div class="ms-auto d-flex align-items-center gap-2">
+          <span class="text-muted small">Logged in as: <strong><?php echo e($displayName); ?></strong></span>
+        </div>
+      </header>
 
-  <main class="container py-4">
-    <div class="d-flex justify-content-between align-items-center mb-3">
+      <main class="container-fluid py-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
       <div>
         <h1 class="h3 mb-1">Dataset Library</h1>
         <p class="text-muted mb-0">Browse, search, download template, and upload datasets.</p>
@@ -395,6 +419,9 @@ $csrf = csrf_token();
           </div>
         </form>
       </div>
+    </div>
+  </div>
+      </main>
     </div>
   </div>
 

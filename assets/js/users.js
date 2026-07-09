@@ -61,12 +61,17 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   const loadUsers = async () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const roleParam = urlParams.get('role') || '';
     const params = new URLSearchParams({
       action: 'list',
       search: searchInput.value.trim(),
       page: String(currentPage),
       per_page: perPageSelect.value,
     });
+    if (roleParam) {
+      params.set('role', roleParam);
+    }
 
     const response = await fetch(`/Data/api/admin/users.php?${params.toString()}`, {
       headers: {

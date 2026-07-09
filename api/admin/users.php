@@ -6,15 +6,29 @@ require_once __DIR__ . '/../../includes/datasets.php';
 
 require_role(['administrator']);
 
-function user_search_clause(string $query): array
+function user_search_clause(string $query, string $roleSlug = ''): array
 {
-    if ($query === '') {
-        return ['sql' => '', 'params' => []];
+    $where = [];
+    $params = [];
+
+    if ($query !== '') {
+        $where[] = '(u.full_name LIKE :search OR u.email LIKE :search OR COALESCE(u.student_id, "") LIKE :search OR COALESCE(u.employee_id, "") LIKE :search OR r.role_name LIKE :search)';
+        $params['search'] = '%' . $query . '%';
+    }
+
+    if ($roleSlug !== '') {
+        $where[] = 'r.role_slug = :role_slug';
+        $params['role_slug'] = $roleSlug;
+    }
+
+    $sql = '';
+    if ($where !== []) {
+        $sql = ' WHERE ' . implode(' AND ', $where);
     }
 
     return [
-        'sql' => ' WHERE (u.full_name LIKE :search OR u.email LIKE :search OR COALESCE(u.student_id, "") LIKE :search OR COALESCE(u.employee_id, "") LIKE :search OR r.role_name LIKE :search)',
-        'params' => ['search' => '%' . $query . '%'],
+        'sql' => $sql,
+        'params' => $params,
     ];
 }
 
@@ -118,11 +132,12 @@ if ($action === 'view') {
 
 if ($action === 'list') {
     $search = trim((string) ($payload['search'] ?? ''));
+    $roleSlug = trim((string) ($payload['role'] ?? ''));
     $page = max(1, (int) ($payload['page'] ?? 1));
     $perPage = min(50, max(5, (int) ($payload['per_page'] ?? 10)));
     $offset = ($page - 1) * $perPage;
 
-    $clause = user_search_clause($search);
+    $clause = user_search_clause($search, $roleSlug);
 
     $countStatement = db()->prepare(
         'SELECT COUNT(*) AS total

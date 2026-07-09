@@ -1,9 +1,12 @@
 document.addEventListener('DOMContentLoaded', () => {
+  const urlParams = new URLSearchParams(window.location.search);
   const state = {
     page: 1,
     perPage: 10,
     search: '',
-    scope: '',
+    scope: urlParams.get('scope') === 'shared' ? 'shared' : '',
+    myDatasets: urlParams.get('filter') === 'my',
+    status: urlParams.get('status') === 'archived' ? 'archived' : '',
     totalPages: 1,
     datasetsById: new Map(),
   };
@@ -162,6 +165,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (state.scope) {
       params.set('scope', state.scope);
     }
+    if (state.myDatasets) {
+      params.set('my_datasets', '1');
+    }
+    if (state.status) {
+      params.set('status', state.status);
+    }
 
     try {
       const response = await fetch(`/Data/api/datasets/list.php?${params.toString()}`, { credentials: 'same-origin' });
@@ -209,6 +218,17 @@ document.addEventListener('DOMContentLoaded', () => {
       state.page = 1;
       loadDatasets();
     });
+  }
+
+  if (els.scope && state.scope) {
+    els.scope.value = state.scope;
+  }
+
+  if (urlParams.get('upload') === '1') {
+    const openUploadBtn = document.getElementById('openUpload');
+    if (openUploadBtn) {
+      setTimeout(() => openUploadBtn.click(), 400);
+    }
   }
 
   loadDatasets();

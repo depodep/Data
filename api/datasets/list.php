@@ -9,6 +9,7 @@ $user = current_user();
 
 $search = trim((string) ($_GET['search'] ?? ''));
 $scope = trim((string) ($_GET['scope'] ?? ''));
+$status = trim((string) ($_GET['status'] ?? ''));
 $page = max(1, (int) ($_GET['page'] ?? 1));
 $perPage = min(50, max(5, (int) ($_GET['per_page'] ?? 10)));
 $offset = ($page - 1) * $perPage;
@@ -28,6 +29,11 @@ if (user_has_role(['administrator'])) {
     $params['uid'] = $user['user_id'];
 }
 
+if (!empty($_GET['my_datasets'])) {
+    $where .= ($where === '' ? 'WHERE ' : ' AND ') . 'd.owner_user_id = :my_uid';
+    $params['my_uid'] = $user['user_id'];
+}
+
 if ($search !== '') {
     $where .= ($where === '' ? 'WHERE ' : ' AND ') . '(d.dataset_name LIKE :search OR d.source_filename LIKE :search)';
     $params['search'] = '%' . $search . '%';
@@ -36,6 +42,11 @@ if ($search !== '') {
 if ($scope !== '') {
     $where .= ($where === '' ? 'WHERE ' : ' AND ') . 'd.shared_scope = :scope';
     $params['scope'] = $scope;
+}
+
+if ($status !== '') {
+    $where .= ($where === '' ? 'WHERE ' : ' AND ') . 'd.processing_status = :status';
+    $params['status'] = $status;
 }
 
 $countSql = 'SELECT COUNT(*) FROM datasets d ' . $where;
