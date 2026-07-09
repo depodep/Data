@@ -22,8 +22,8 @@ if (!can_current_user_view_dataset($dataset)) {
 $file = $dataset['file_path'] ?? null;
 if (empty($file)) json_response(['success' => false, 'message' => 'Dataset file missing'], 500);
 
-$abs = realpath(__DIR__ . '/../../' . ltrim($file, '/\\'));
-if ($abs === false || !is_file($abs)) json_response(['success' => false, 'message' => 'File not readable'], 500);
+$abs = dataset_absolute_path((string) $file);
+if ($abs === null || !is_file($abs)) json_response(['success' => false, 'message' => 'File not readable'], 500);
 
 $chartsDir = __DIR__ . '/../../charts';
 $outDir = $chartsDir . DIRECTORY_SEPARATOR . 'dataset_' . $datasetId;

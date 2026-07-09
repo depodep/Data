@@ -4,26 +4,36 @@
 Usage: python clean_dataset.py <input_csv> <output_csv>
 Prints a JSON summary to stdout.
 """
-import sys
+import csv
 import json
+import sys
 from pathlib import Path
 
 
-def detect_outliers(series):
-    # simple z-score method
+def parse_float(value):
     try:
-        import numpy as np
-    except Exception:
+        return float(value)
+    except (ValueError, TypeError):
+        return None
+
+
+def is_numeric_column(values):
+    if not values:
+        return False
+    numeric = [parse_float(v) is not None for v in values if v != '']
+    return len(numeric) >= max(1, len(values) * 0.5)
+
+
+def detect_outliers(values):
+    numbers = [v for v in (parse_float(x) for x in values) if v is not None]
+    if len(numbers) < 2:
         return 0
-    arr = series.dropna().to_numpy(dtype=float)
-    if arr.size == 0:
-        return 0
-    mean = arr.mean()
-    std = arr.std()
+    mean = sum(numbers) / len(numbers)
+    variance = sum((x - mean) ** 2 for x in numbers) / len(numbers)
+    std = variance ** 0.5
     if std == 0:
         return 0
-    z = (arr - mean) / std
-    return int((abs(z) > 3).sum())
+    return sum(1 for x in numbers if abs((x - mean) / std) > 3)
 
 
 def main():
@@ -40,62 +50,75 @@ def main():
         except Exception:
             opts = {}
 
-    try:
-        import pandas as pd
-        import numpy as np
-    except Exception as e:
-        print(json.dumps({'success': False, 'message': f'Import error: {e}'}))
-        return
-
     if not input_path.exists():
         print(json.dumps({'success': False, 'message': 'Input file not found'}))
         return
 
-    df = pd.read_csv(input_path)
-    before_rows = int(len(df))
+    with open(input_path, newline='', encoding='utf-8') as csvfile:
+        reader = csv.DictReader(csvfile)
+        rows = list(reader)
+        headers = reader.fieldnames or []
 
-    # Trim whitespace from string columns
-    str_cols = df.select_dtypes(include=['object']).columns
-    for c in str_cols:
-        df[c] = df[c].astype(str).str.strip()
+    before_rows = len(rows)
+    if before_rows == 0:
+        print(json.dumps({'success': False, 'message': 'No data rows found'}))
+        return
 
-    # Collect missing counts
-    missing_before = {col: int(df[col].isna().sum()) for col in df.columns}
+    trimmed_rows = []
+    for row in rows:
+        cleaned = {k: (v.strip() if isinstance(v, str) else '') for k, v in row.items()}
+        trimmed_rows.append(cleaned)
 
-    removed_duplicates = 0
-    if opts.get('remove_duplicates', True):
-        df_before = len(df)
-        df = df.drop_duplicates()
-        removed_duplicates = int(df_before - len(df))
+    missing_before = {col: 0 for col in headers}
+    for row in trimmed_rows:
+        for col in headers:
+            if row.get(col, '') == '':
+                missing_before[col] += 1
 
-    # Handle missing values
-    missing_strategy = opts.get('missing_strategy', 'none')  # none, fill_zero, fill_mean
-    missing_after = {}
-    if missing_strategy == 'fill_zero':
-        num_cols = df.select_dtypes(include=['number']).columns
-        df[num_cols] = df[num_cols].fillna(0)
-    elif missing_strategy == 'fill_mean':
-        num_cols = df.select_dtypes(include=['number']).columns
-        for c in num_cols:
-            mean = df[c].mean()
-            if not (mean is None or pd.isna(mean)):
-                df[c] = df[c].fillna(mean)
+    unique_rows = []
+    seen = set()
+    for row in trimmed_rows:
+        key = tuple(row.get(col, '') for col in headers)
+        if key not in seen:
+            seen.add(key)
+            unique_rows.append(row)
+    removed_duplicates = len(trimmed_rows) - len(unique_rows)
+    result_rows = unique_rows if opts.get('remove_duplicates', True) else trimmed_rows
 
-    missing_after = {col: int(df[col].isna().sum()) for col in df.columns}
+    num_cols = [col for col in headers if is_numeric_column([row.get(col, '') for row in result_rows])]
+    missing_strategy = opts.get('missing_strategy', 'none')
+    missing_after = {col: 0 for col in headers}
 
-    # Detect outliers for numeric columns
-    numeric = df.select_dtypes(include=['number'])
-    outliers = {col: detect_outliers(df[col]) for col in numeric.columns}
+    if missing_strategy in ('fill_zero', 'fill_mean') and num_cols:
+        for col in num_cols:
+            numeric_values = [parse_float(row.get(col, '')) for row in result_rows]
+            if missing_strategy == 'fill_mean':
+                valid = [v for v in numeric_values if v is not None]
+                replacement = sum(valid) / len(valid) if valid else 0.0
+            else:
+                replacement = 0.0
+            for row in result_rows:
+                if row.get(col, '') == '':
+                    row[col] = str(replacement)
 
-    # Save cleaned CSV
+    for row in result_rows:
+        for col in headers:
+            if row.get(col, '') == '':
+                missing_after[col] += 1
+
+    outliers = {col: detect_outliers([row.get(col, '') for row in result_rows]) for col in num_cols}
+
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    df.to_csv(output_path, index=False)
+    with open(output_path, 'w', newline='', encoding='utf-8') as csvfile:
+        writer = csv.DictWriter(csvfile, fieldnames=headers)
+        writer.writeheader()
+        writer.writerows(result_rows)
 
     summary = {
         'success': True,
         'message': 'Cleaning completed',
         'before_rows': before_rows,
-        'after_rows': int(len(df)),
+        'after_rows': len(result_rows),
         'removed_duplicates': removed_duplicates,
         'missing_before': missing_before,
         'missing_after': missing_after,
@@ -103,7 +126,6 @@ def main():
         'output_path': str(output_path),
         'options': opts,
     }
-
     print(json.dumps(summary))
 
 

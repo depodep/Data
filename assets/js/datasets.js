@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
     search: '',
     scope: '',
     totalPages: 1,
+    datasetsById: new Map(),
   };
 
   const els = {
@@ -48,7 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     return `
       <div class="col-12 col-md-6 col-xl-4">
-        <article class="card border-0 shadow-sm h-100 dataset-card" data-dataset-id="${escapeHtml(dataset.dataset_id)}">
+        <article class="card border-0 shadow-sm h-100 dataset-card" data-dataset-id="${escapeHtml(dataset.dataset_id)}" role="button" tabindex="0">
           <div class="card-body d-flex flex-column">
             <div class="mb-3">
               <h5 class="card-title mb-2">${title}</h5>
@@ -65,7 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
 
             <div class="mt-auto d-grid gap-2">
-              <button type="button" class="btn btn-primary btn-sm view-dataset-btn" data-dataset-id="${escapeHtml(dataset.dataset_id)}">View Dataset</button>
+              <button type="button" class="btn btn-primary btn-sm view-dataset-btn" data-dataset-id="${escapeHtml(dataset.dataset_id)}">View Data Sets</button>
             </div>
           </div>
         </article>
@@ -106,23 +107,45 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   const openDataset = (dataset) => {
-    if (!dataset || !window.DatasetWorkspace?.open) {
+    if (!dataset) {
       return;
     }
-    window.DatasetWorkspace.open(dataset);
+    if (window.DatasetWorkspace?.open) {
+      window.DatasetWorkspace.open(dataset);
+      return;
+    }
+    const datasetId = Number(dataset.dataset_id || dataset.id || 0);
+    if (Number.isFinite(datasetId) && datasetId > 0) {
+      window.location.href = `/Data/pages/datasets/workspace.php?id=${datasetId}`;
+    }
   };
 
   const bindCardActions = () => {
     if (!els.grid) return;
 
+    const openById = (datasetId) => {
+      if (!Number.isFinite(datasetId) || datasetId <= 0) return;
+      const dataset = state.datasetsById.get(datasetId);
+      if (!dataset) return;
+      openDataset(dataset);
+    };
+
     els.grid.querySelectorAll('.dataset-card').forEach((card) => {
       card.addEventListener('click', () => {
-        const datasetId = Number(card.dataset.datasetId);
-        if (!Number.isFinite(datasetId) || datasetId <= 0) return;
-        const datasetName = card.querySelector('.card-title')?.textContent || '';
-        const ownerText = card.querySelector('.text-muted small')?.textContent || '';
-        const dataset = { dataset_id: datasetId, dataset_name: datasetName, owner_name: ownerText };
-        openDataset(dataset);
+        openById(Number(card.dataset.datasetId));
+      });
+
+      card.addEventListener('keydown', (event) => {
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+        event.preventDefault();
+        openById(Number(card.dataset.datasetId));
+      });
+    });
+
+    els.grid.querySelectorAll('.view-dataset-btn').forEach((button) => {
+      button.addEventListener('click', (event) => {
+        event.stopPropagation();
+        openById(Number(button.dataset.datasetId));
       });
     });
   };
@@ -149,6 +172,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       const rows = Array.isArray(json.data) ? json.data : [];
+      state.datasetsById = new Map(rows.map((dataset) => [Number(dataset.dataset_id), dataset]));
       if (!rows.length) {
         els.grid.innerHTML = '<div class="col-12"><div class="p-4 text-center text-muted">No datasets found for this filter.</div></div>';
       } else {

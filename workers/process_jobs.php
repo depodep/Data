@@ -107,7 +107,8 @@ try {
 
         case 'predict':
             $payload = json_decode((string)$job['payload_json'], true) ?: [];
-            $target = $payload['target'] ?? null;
+            $target = $payload['target'] ?? 'Final Score';
+            $featureColumns = $payload['feature_columns'] ?? ['Attendance'];
             if (!$target) throw new RuntimeException('Missing target in payload');
 
             $stmt = $pdo->prepare('SELECT * FROM datasets WHERE dataset_id = :id LIMIT 1');
@@ -125,7 +126,8 @@ try {
 
             $python = 'python';
             $script = __DIR__ . '/../python/predict_dataset.py';
-            $cmd = escapeshellcmd($python) . ' ' . escapeshellarg($script) . ' ' . escapeshellarg($abs) . ' ' . escapeshellarg($target) . ' ' . escapeshellarg($outPath);
+            $featureArg = implode(',', is_array($featureColumns) ? $featureColumns : ['Attendance']);
+            $cmd = escapeshellcmd($python) . ' ' . escapeshellarg($script) . ' ' . escapeshellarg($abs) . ' ' . escapeshellarg($target) . ' ' . escapeshellarg($outPath) . ' ' . escapeshellarg($featureArg);
             logStd('Running: ' . $cmd);
             $raw = shell_exec($cmd);
             $result = json_decode($raw, true) ?: ['success' => false, 'message' => 'Invalid JSON from script', 'raw' => $raw];
@@ -138,7 +140,7 @@ try {
                     $colCheck->execute();
                     $hasModelPath = (int) ($colCheck->fetchColumn() ?: 0) > 0;
 
-                    $featureJson = json_encode($payload['feature_columns'] ?? [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                    $featureJson = json_encode($featureColumns, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
                     $metricsJson = json_encode($result['metrics'] ?? $result, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
                     $predictionsJson = json_encode(['predictions_path' => $result['predictions_path'] ?? $outPath], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
@@ -147,7 +149,7 @@ try {
                         $ins->execute([
                             'dataset_id' => $datasetId,
                             'run_by_user_id' => $job['run_by_user_id'],
-                            'model_type' => $payload['model_type'] ?? 'linear_regression',
+                            'model_type' => 'linear_regression',
                             'target_column' => $target,
                             'feature_columns_json' => $featureJson,
                             'training_rows' => $result['training_rows'] ?? 0,
@@ -164,7 +166,7 @@ try {
                         $ins->execute([
                             'dataset_id' => $datasetId,
                             'run_by_user_id' => $job['run_by_user_id'],
-                            'model_type' => $payload['model_type'] ?? 'linear_regression',
+                            'model_type' => 'linear_regression',
                             'target_column' => $target,
                             'feature_columns_json' => $featureJson,
                             'training_rows' => $result['training_rows'] ?? 0,

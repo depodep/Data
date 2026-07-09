@@ -51,7 +51,7 @@ $canImport = user_has_role(['administrator','teacher']) && ($dataset['processing
         <?php if ($canImport): ?>
           <button id="importBtn" class="btn btn-primary">Import Records</button>
         <?php endif; ?>
-        <a class="btn btn-outline-secondary" href="<?php echo e($dataset['file_path']); ?>" download>Download CSV</a>
+        <a class="btn btn-outline-secondary" href="<?php echo e($dataset['file_path']); ?>" target="_blank" rel="noopener">View Dataset</a>
       </div>
     </div>
 
@@ -60,9 +60,6 @@ $canImport = user_has_role(['administrator','teacher']) && ($dataset['processing
         <ul class="nav nav-tabs mb-3" id="workspaceTabs" role="tablist">
           <li class="nav-item" role="presentation">
             <button class="nav-link active" id="tab-preview" data-bs-toggle="tab" data-bs-target="#pane-preview" type="button" role="tab">Preview</button>
-          </li>
-          <li class="nav-item" role="presentation">
-            <button class="nav-link" id="tab-clean" data-bs-toggle="tab" data-bs-target="#pane-clean" type="button" role="tab">Cleaning</button>
           </li>
           <li class="nav-item" role="presentation">
             <button class="nav-link" id="tab-analysis" data-bs-toggle="tab" data-bs-target="#pane-analysis" type="button" role="tab">Analysis</button>
@@ -81,42 +78,30 @@ $canImport = user_has_role(['administrator','teacher']) && ($dataset['processing
             <div id="previewArea">Loading preview…</div>
           </div>
 
-          <div class="tab-pane fade" id="pane-clean" role="tabpanel">
-            <h5 class="card-title">Cleaning</h5>
-            <p class="text-muted">Run automatic cleaning using the Python cleaning engine.</p>
-            <?php if ($canImport): ?>
-              <div class="d-flex gap-2 mb-3">
-                <button id="runCleanBtn" class="btn btn-outline-primary">Run Cleaning</button>
-                <button id="previewCleanBtn" class="btn btn-outline-secondary">Preview Cleaned</button>
+          <div class="tab-pane fade" id="pane-analysis" role="tabpanel">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-start gap-3 mb-3">
+              <div>
+                <h5 class="card-title mb-1">Statistical Analysis</h5>
+                <p class="text-muted mb-0">Run descriptive analysis on numeric columns and generate dataset insights.</p>
               </div>
-            <?php else: ?>
-              <div class="alert alert-secondary">Cleaning is available after upload and for authorized users.</div>
-            <?php endif; ?>
-            <div class="row">
-              <div class="col-12 col-lg-6">
-                <label class="form-label">Missing values strategy</label>
-                <select id="missingStrategy" class="form-select mb-2">
-                  <option value="none">None</option>
-                  <option value="fill_zero">Fill zeros</option>
-                  <option value="fill_mean">Fill mean</option>
-                </select>
-                <div class="form-check">
-                  <input class="form-check-input" type="checkbox" id="optRemoveDuplicates" checked>
-                  <label class="form-check-label" for="optRemoveDuplicates">Remove duplicates</label>
-                </div>
-              </div>
-              <div class="col-12 col-lg-6">
-                <h6 class="mt-2">Cleaning output</h6>
-                <pre id="cleanOutput" class="p-3 bg-light small">No output yet.</pre>
+              <div class="d-flex flex-column gap-2 text-end">
+                <div class="badge bg-secondary">Status: <span id="workspaceDatasetStatus">Idle</span></div>
+                <div class="badge bg-secondary">Last analysis: <span id="workspaceLastAnalysisTime">-</span></div>
               </div>
             </div>
-          </div>
-
-          <div class="tab-pane fade" id="pane-analysis" role="tabpanel">
-            <h5 class="card-title">Statistical Analysis</h5>
-            <p class="text-muted">Run basic descriptive analysis on numeric columns.</p>
-            <button id="runAnalyzeBtn" class="btn btn-outline-secondary mb-3">Run Analysis</button>
-            <pre id="analysisOutput" class="p-3 bg-light small">No analysis yet.</pre>
+            <div class="row g-3 mb-3">
+              <div class="col-auto">
+                <button id="runAnalyzeBtn" class="btn btn-outline-secondary">Run Analysis</button>
+              </div>
+            </div>
+            <div id="analysisStatsGrid" class="row g-3 mb-4"></div>
+            <div id="analysisInsights" class="row g-3 mb-4"></div>
+            <div class="card border-0 shadow-sm">
+              <div class="card-body">
+                <h6 class="mb-3">Raw analysis output</h6>
+                <pre id="analysisOutput" class="p-3 bg-light small mb-0">No analysis yet.</pre>
+              </div>
+            </div>
           </div>
 
           <div class="tab-pane fade" id="pane-visual" role="tabpanel">

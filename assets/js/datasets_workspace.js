@@ -15,6 +15,8 @@ document.addEventListener('DOMContentLoaded', () => {
     previewPage: 1,
     previewPerPage: 5,
     analysis: null,
+    analysisLoading: false,
+    analysisCharts: [],
     visualCharts: [],
     chartInstances: [],
     predictionsPath: null,
@@ -28,12 +30,6 @@ document.addEventListener('DOMContentLoaded', () => {
     previewArea: document.getElementById('previewArea'),
     previewMeta: document.getElementById('workspacePreviewMeta'),
     columnInfo: document.getElementById('workspaceColumnInfo'),
-    summaryRows: document.getElementById('workspaceSummaryRows'),
-    summaryColumns: document.getElementById('workspaceSummaryColumns'),
-    summaryNumeric: document.getElementById('workspaceSummaryNumeric'),
-    summaryCategorical: document.getElementById('workspaceSummaryCategorical'),
-    summaryMissing: document.getElementById('workspaceSummaryMissing'),
-    summaryDuplicates: document.getElementById('workspaceSummaryDuplicates'),
     sidebarRows: document.getElementById('workspaceSidebarRows'),
     sidebarColumns: document.getElementById('workspaceSidebarColumns'),
     sidebarMissing: document.getElementById('workspaceSidebarMissing'),
@@ -60,6 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
     workspaceVisualizeBtn: document.getElementById('workspaceVisualizeBtn'),
     workspaceMachineLearningBtn: document.getElementById('workspaceMachineLearningBtn'),
     workspaceExportResultsBtn: document.getElementById('workspaceExportResultsBtn'),
+    predictionSummary: document.getElementById('predictionSummary'),
     cleanOutput: document.getElementById('cleanOutput'),
     analysisOutput: document.getElementById('analysisOutput'),
     visualOutput: document.getElementById('visualOutput'),
@@ -67,10 +64,18 @@ document.addEventListener('DOMContentLoaded', () => {
     analysisStatsGrid: document.getElementById('analysisStatsGrid'),
     analysisInsights: document.getElementById('analysisInsights'),
     analysisCorrelation: document.getElementById('analysisCorrelation'),
+    analysisStateAlert: document.getElementById('analysisStateAlert'),
+    analysisLoading: document.getElementById('analysisLoading'),
+    analysisEmptyState: document.getElementById('analysisEmptyState'),
+    analysisDashboard: document.getElementById('analysisDashboard'),
+    analysisOverallCards: document.getElementById('analysisOverallCards'),
+    analysisDescriptiveTable: document.getElementById('analysisDescriptiveTable'),
+    analysisCorrelationMatrix: document.getElementById('analysisCorrelationMatrix'),
+    analysisCorrelationHeatmap: document.getElementById('analysisCorrelationHeatmap'),
+    analysisCorrelationSummary: document.getElementById('analysisCorrelationSummary'),
+    analysisTrendCards: document.getElementById('analysisTrendCards'),
+    analysisInsightCards: document.getElementById('analysisInsightCards'),
     predictionMatrix: document.getElementById('predictionMatrix'),
-    predictTarget: document.getElementById('predictTarget'),
-    predictFeatures: document.getElementById('predictFeatures'),
-    predictModel: document.getElementById('predictModel'),
     predictionAccuracy: document.getElementById('predictionAccuracy'),
     predictionR2: document.getElementById('predictionR2'),
     predictionMae: document.getElementById('predictionMae'),
@@ -110,6 +115,332 @@ document.addEventListener('DOMContentLoaded', () => {
     const parsed = Number(value);
     return Number.isFinite(parsed) ? parsed.toFixed(digits) : '-';
   };
+
+  const formatAnalysisValue = (value, digits = 2) => {
+    if (value === null || value === undefined || value === '') return '—';
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) return parsed.toFixed(digits);
+    return String(value);
+  };
+
+  const EXCLUDED_ANALYSIS_FIELDS = new Set(['student id', 'student name', 'name', 'year level']);
+  const EXCLUDED_VISUALIZATION_FIELDS = new Set(['student id', 'student name', 'name', 'year level']);
+
+  const normalizeFieldName = (fieldName) => String(fieldName ?? '')
+    .toLowerCase()
+    .replace(/[_-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  const isExcludedAnalysisField = (fieldName) => EXCLUDED_ANALYSIS_FIELDS.has(normalizeFieldName(fieldName));
+
+  const isExcludedVisualizationField = (fieldName) => EXCLUDED_VISUALIZATION_FIELDS.has(normalizeFieldName(fieldName));
+
+  const analysisBadgeClass = (value) => {
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) return 'text-bg-light text-dark';
+    if (numeric >= 0.75) return 'text-bg-success-subtle text-success-emphasis';
+    if (numeric >= 0.35) return 'text-bg-primary-subtle text-primary-emphasis';
+    if (numeric <= -0.75) return 'text-bg-danger-subtle text-danger-emphasis';
+    if (numeric <= -0.35) return 'text-bg-warning-subtle text-warning-emphasis';
+    return 'text-bg-light text-dark';
+  };
+
+  const analysisStrengthLabel = (value) => {
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) return 'No Correlation';
+    const magnitude = Math.abs(numeric);
+    if (magnitude >= 0.75) return numeric > 0 ? 'Strong Positive' : 'Strong Negative';
+    if (magnitude >= 0.35) return 'Weak';
+    return 'No Correlation';
+  };
+
+  const destroyAnalysisCharts = () => {
+    state.analysisCharts.forEach((chart) => chart.destroy());
+    state.analysisCharts = [];
+  };
+
+  const getAnalysisData = () => state.analysis || {};
+
+  const getNumericColumns = () => (getAnalysisData().numeric_columns || []).filter((column) => !isExcludedAnalysisField(column));
+
+  const getDescriptiveStatistics = () => (getAnalysisData().descriptive_statistics || [])
+    .filter((row) => !isExcludedAnalysisField(row.field));
+
+  const getOverallStatistics = () => getAnalysisData().overall_statistics || null;
+
+  const getCorrelationMatrix = () => {
+    const matrix = getAnalysisData().correlation || {};
+    const allowedColumns = Object.keys(matrix).filter((column) => !isExcludedAnalysisField(column));
+    return allowedColumns.reduce((accumulator, rowName) => {
+      accumulator[rowName] = allowedColumns.reduce((rowAccumulator, columnName) => {
+        rowAccumulator[columnName] = matrix[rowName]?.[columnName];
+        return rowAccumulator;
+      }, {});
+      return accumulator;
+    }, {});
+  };
+
+  const getCorrelationSummary = () => {
+    const summary = getAnalysisData().correlation_summary || {};
+    const filterPairList = (items) => (Array.isArray(items) ? items.filter((item) => (
+      !isExcludedAnalysisField(item.first) && !isExcludedAnalysisField(item.second)
+    )) : []);
+    const strongest = summary.strongest_relationship;
+    const weakest = summary.weakest_relationship;
+
+    return {
+      strongest_relationship: strongest && !isExcludedAnalysisField(strongest.first) && !isExcludedAnalysisField(strongest.second)
+        ? strongest
+        : null,
+      weakest_relationship: weakest && !isExcludedAnalysisField(weakest.first) && !isExcludedAnalysisField(weakest.second)
+        ? weakest
+        : null,
+      positive_correlations: filterPairList(summary.positive_correlations),
+      negative_correlations: filterPairList(summary.negative_correlations),
+    };
+  };
+
+  const getTrendAnalysis = () => {
+    const trendAnalysis = getAnalysisData().trend_analysis || {};
+    return Object.entries(trendAnalysis).reduce((accumulator, [fieldName, trendData]) => {
+      if (!isExcludedAnalysisField(fieldName)) {
+        accumulator[fieldName] = trendData;
+      }
+      return accumulator;
+    }, {});
+  };
+
+  const getInsights = () => getAnalysisData().insights || [];
+
+  const hideAnalysisViews = () => {
+    ['analysisDashboard', 'analysisLoading'].forEach((key) => {
+      if (els[key]) els[key].classList.add('d-none');
+    });
+  };
+
+  const setAnalysisMessage = (message, type = 'info') => {
+    if (!els.analysisStateAlert) return;
+    els.analysisStateAlert.className = `alert alert-${type} mb-4`;
+    els.analysisStateAlert.textContent = message;
+    els.analysisStateAlert.classList.remove('d-none');
+  };
+
+  const clearAnalysisMessage = () => {
+    if (!els.analysisStateAlert) return;
+    els.analysisStateAlert.classList.add('d-none');
+  };
+
+  const renderCorrelationCellClass = (value) => {
+    const numeric = Number(value);
+    const intensity = Number.isFinite(numeric) ? Math.min(1, Math.abs(numeric)) : 0;
+    if (numeric >= 0) {
+      return `rgba(37, 99, 235, ${0.08 + intensity * 0.62})`;
+    }
+    return `rgba(239, 68, 68, ${0.08 + intensity * 0.62})`;
+  };
+
+  const renderCorrelationMatrix = (matrix) => {
+    const columns = Object.keys(matrix || {});
+    if (!columns.length) {
+      return '<div class="alert alert-light border mb-0">No correlation data is available for this dataset.</div>';
+    }
+
+    return `
+      <table class="table table-sm table-bordered align-middle mb-0 correlation-table">
+        <thead class="table-light">
+          <tr>
+            <th></th>
+            ${columns.map((column) => `<th class="text-nowrap">${escapeHtml(column)}</th>`).join('')}
+          </tr>
+        </thead>
+        <tbody>
+          ${columns.map((rowName) => `
+            <tr>
+              <th class="text-nowrap">${escapeHtml(rowName)}</th>
+              ${columns.map((colName) => {
+                const value = matrix[rowName]?.[colName];
+                const numeric = Number(value);
+                const badgeClass = analysisBadgeClass(numeric);
+                const background = renderCorrelationCellClass(numeric);
+                return `<td class="text-center fw-semibold" style="background:${background}"><span class="badge ${badgeClass}">${Number.isFinite(numeric) ? numeric.toFixed(2) : '-'}</span></td>`;
+              }).join('')}
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+  };
+
+  const renderCorrelationHeatmap = (canvas, matrix) => {
+    if (!canvas || !window.Chart) return;
+    const columns = Object.keys(matrix || {});
+    if (!columns.length) return;
+
+    const getCellColor = (value) => {
+      const numeric = Number(value);
+      const intensity = Number.isFinite(numeric) ? Math.min(1, Math.abs(numeric)) : 0;
+      return numeric >= 0
+        ? `rgba(37, 99, 235, ${0.15 + intensity * 0.7})`
+        : `rgba(239, 68, 68, ${0.15 + intensity * 0.7})`;
+    };
+
+    const heatmapPlugin = {
+      id: 'analysisHeatmapPainter',
+      afterDraw(chart) {
+        const { ctx, chartArea } = chart;
+        if (!chartArea) return;
+
+        const width = chartArea.right - chartArea.left;
+        const height = chartArea.bottom - chartArea.top;
+        const cellSize = Math.min(width, height) / (columns.length + 1);
+        const gridStartX = chartArea.left + cellSize;
+        const gridStartY = chartArea.top + cellSize;
+
+        ctx.save();
+        ctx.clearRect(chartArea.left, chartArea.top, width, height);
+        ctx.font = '12px sans-serif';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#334155';
+
+        columns.forEach((label, index) => {
+          const x = gridStartX + (index * cellSize) + (cellSize / 2);
+          ctx.save();
+          ctx.translate(x, chartArea.top + 12);
+          ctx.rotate(-Math.PI / 4);
+          ctx.fillText(label, 0, 0);
+          ctx.restore();
+
+          const y = gridStartY + (index * cellSize) + (cellSize / 2);
+          ctx.fillText(label, chartArea.left + 4, y);
+        });
+
+        columns.forEach((rowName, rowIndex) => {
+          columns.forEach((colName, colIndex) => {
+            const value = Number(matrix[rowName]?.[colName] ?? 0);
+            const cellX = gridStartX + (colIndex * cellSize);
+            const cellY = gridStartY + (rowIndex * cellSize);
+            const cellPadding = 2;
+            ctx.fillStyle = getCellColor(value);
+            ctx.fillRect(cellX + cellPadding, cellY + cellPadding, cellSize - (cellPadding * 2), cellSize - (cellPadding * 2));
+            ctx.fillStyle = Math.abs(value) > 0.55 ? '#fff' : '#0f172a';
+            ctx.font = 'bold 11px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(Number.isFinite(value) ? value.toFixed(2) : '-', cellX + (cellSize / 2), cellY + (cellSize / 2));
+            ctx.font = '12px sans-serif';
+          });
+        });
+
+        ctx.restore();
+      },
+    };
+
+    const chart = new window.Chart(canvas, {
+      type: 'scatter',
+      data: {
+        datasets: [{ data: [] }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { enabled: false },
+        },
+        scales: {
+          x: { display: false },
+          y: { display: false },
+        },
+      },
+      plugins: [heatmapPlugin],
+    });
+
+    state.analysisCharts.push(chart);
+  };
+
+  const renderCorrelationSummaryCards = (summary) => {
+    const strongest = summary.strongest_relationship;
+    const weakest = summary.weakest_relationship;
+    const positive = summary.positive_correlations || [];
+    const negative = summary.negative_correlations || [];
+
+    const pairList = (items, emptyText) => {
+      if (!items.length) return `<div class="text-muted small">${escapeHtml(emptyText)}</div>`;
+      return `<div class="d-grid gap-2">${items.slice(0, 3).map((item) => `
+        <div class="d-flex justify-content-between align-items-center gap-2">
+          <div class="small">${escapeHtml(item.first)} <span class="text-muted">vs</span> ${escapeHtml(item.second)}</div>
+          <span class="badge ${analysisBadgeClass(item.value)}">${Number(item.value).toFixed(2)}</span>
+        </div>
+      `).join('')}</div>`;
+    };
+
+    return `
+      <div class="col-12 col-md-6 col-xxl-3">
+        <div class="card border-0 shadow-sm workspace-section-card h-100"><div class="card-body">
+          <h6 class="mb-2">Strongest Relationship</h6>
+          ${strongest ? `<div class="fw-semibold">${escapeHtml(strongest.first)} vs ${escapeHtml(strongest.second)}</div><div class="text-muted small">Pearson r ${formatAnalysisValue(strongest.value)}</div>` : '<div class="text-muted small">No paired numeric fields available.</div>'}
+        </div></div>
+      </div>
+      <div class="col-12 col-md-6 col-xxl-3">
+        <div class="card border-0 shadow-sm workspace-section-card h-100"><div class="card-body">
+          <h6 class="mb-2">Weakest Relationship</h6>
+          ${weakest ? `<div class="fw-semibold">${escapeHtml(weakest.first)} vs ${escapeHtml(weakest.second)}</div><div class="text-muted small">Pearson r ${formatAnalysisValue(weakest.value)}</div>` : '<div class="text-muted small">No paired numeric fields available.</div>'}
+        </div></div>
+      </div>
+      <div class="col-12 col-md-6 col-xxl-3">
+        <div class="card border-0 shadow-sm workspace-section-card h-100"><div class="card-body">
+          <h6 class="mb-2">Positive Correlations</h6>
+          ${pairList(positive, 'No strong positive correlations identified.')}
+        </div></div>
+      </div>
+      <div class="col-12 col-md-6 col-xxl-3">
+        <div class="card border-0 shadow-sm workspace-section-card h-100"><div class="card-body">
+          <h6 class="mb-2">Negative Correlations</h6>
+          ${pairList(negative, 'No strong negative correlations identified.')}
+        </div></div>
+      </div>
+    `;
+  };
+
+  const renderTrendCard = (fieldName, trendData) => {
+    const canvasId = `analysis-trend-${fieldName.replace(/[^a-z0-9]+/gi, '-').toLowerCase()}`;
+    const directionBadge = trendData.direction === 'increasing'
+      ? 'text-bg-success-subtle text-success-emphasis'
+      : trendData.direction === 'declining'
+        ? 'text-bg-danger-subtle text-danger-emphasis'
+        : 'text-bg-warning-subtle text-warning-emphasis';
+
+    return `
+      <div class="card border-0 shadow-sm workspace-section-card">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start gap-2 mb-3">
+            <div>
+              <h6 class="mb-1">${escapeHtml(fieldName)}</h6>
+              <p class="text-muted small mb-0">Line chart with trend line and moving average.</p>
+            </div>
+            <span class="badge ${directionBadge}">${escapeHtml(trendData.direction || 'insufficient_data')}</span>
+          </div>
+          <div class="workspace-chart-placeholder mb-3">
+            <canvas id="${canvasId}" height="220"></canvas>
+          </div>
+          <div class="d-flex flex-wrap gap-2 small">
+            <span class="badge text-bg-light text-dark">Slope: ${formatAnalysisValue(trendData.slope)}</span>
+            <span class="badge text-bg-light text-dark">Outliers: ${Array.isArray(trendData.outliers) ? trendData.outliers.length : 0}</span>
+            <span class="badge text-bg-light text-dark">Spikes: ${Array.isArray(trendData.spikes) ? trendData.spikes.length : 0}</span>
+          </div>
+        </div>
+      </div>
+    `;
+  };
+
+  const renderInsightSummary = (insights) => `
+    <div class="col-12">
+      <div class="alert alert-info shadow-sm mb-0">
+        <div class="fw-semibold mb-2">Insights</div>
+        <p class="mb-0">${escapeHtml(insights.join(' '))}</p>
+      </div>
+    </div>
+  `;
 
   const formatDate = (value) => {
     if (!value) return '-';
@@ -197,12 +528,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const rows = state.meta.record_count ?? state.preview.length;
     const columns = state.meta.column_count ?? state.previewColumns.length;
 
-    [els.summaryRows, els.sidebarRows].forEach((node) => { if (node) node.textContent = String(rows ?? '-'); });
-    [els.summaryColumns, els.sidebarColumns].forEach((node) => { if (node) node.textContent = String(columns ?? '-'); });
-    if (els.summaryNumeric) els.summaryNumeric.textContent = String(summary.numericColumns);
-    if (els.summaryCategorical) els.summaryCategorical.textContent = String(summary.categoricalColumns);
-    if (els.summaryMissing) els.summaryMissing.textContent = String(summary.missingValues);
-    if (els.summaryDuplicates) els.summaryDuplicates.textContent = String(summary.duplicateRows);
+    if (els.sidebarRows) els.sidebarRows.textContent = String(rows ?? '-');
+    if (els.sidebarColumns) els.sidebarColumns.textContent = String(columns ?? '-');
     if (els.sidebarMissing) els.sidebarMissing.textContent = String(summary.missingValues);
     if (els.sidebarDuplicates) els.sidebarDuplicates.textContent = String(summary.duplicateRows);
     if (els.cleaningMissing) els.cleaningMissing.textContent = String(summary.missingValues);
@@ -232,7 +559,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const buildColumnInfo = () => {
     if (!els.columnInfo) return;
     const rows = state.preview;
-    els.columnInfo.innerHTML = state.previewColumns.map((column) => {
+    const visibleColumns = state.previewColumns.filter((column) => !isExcludedAnalysisField(column));
+    if (!visibleColumns.length) {
+      els.columnInfo.innerHTML = '<div class="col-12"><div class="alert alert-light border mb-0">No visible fields available.</div></div>';
+      return;
+    }
+
+    els.columnInfo.innerHTML = visibleColumns.map((column) => {
       const values = rows.map((row) => row[column]).filter((value) => value !== null && value !== undefined && value !== '');
       const uniqueValues = new Set(values.map((value) => String(value))).size;
       const missingCount = rows.length - values.length;
@@ -357,73 +690,143 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   const renderAnalysis = () => {
-    if (!state.analysis) return;
+    const analysis = getAnalysisData();
+    const hasDataset = Boolean(state.datasetId);
 
-    const stats = state.analysis.numeric_stats || {};
-    if (els.analysisStatsGrid) {
-      els.analysisStatsGrid.innerHTML = Object.entries(stats).map(([column, values]) => `
-        <div class="col-12 col-md-6 col-xxl-4">
-          <div class="card border-0 shadow-sm workspace-stat-card h-100">
-            <div class="card-body">
-              <div class="d-flex justify-content-between align-items-start gap-2 mb-3">
-                <div>
-                  <h6 class="mb-1">${escapeHtml(column)}</h6>
-                  <div class="text-muted small">Descriptive statistics</div>
-                </div>
-                <span class="badge text-bg-primary-subtle text-primary-emphasis">Numeric</span>
-              </div>
-              <div class="row g-2 small">
-                <div class="col-6"><div class="workspace-mini-kpi p-2"><div class="text-muted small">Mean</div><div class="fw-semibold">${formatNumber(values.mean)}</div></div></div>
-                <div class="col-6"><div class="workspace-mini-kpi p-2"><div class="text-muted small">Median</div><div class="fw-semibold">${formatNumber(values.median)}</div></div></div>
-                <div class="col-6"><div class="workspace-mini-kpi p-2"><div class="text-muted small">Mode</div><div class="fw-semibold">${formatNumber(values.mode)}</div></div></div>
-                <div class="col-6"><div class="workspace-mini-kpi p-2"><div class="text-muted small">Count</div><div class="fw-semibold">${escapeHtml(values.count ?? '-')}</div></div></div>
-                <div class="col-6"><div class="workspace-mini-kpi p-2"><div class="text-muted small">Minimum</div><div class="fw-semibold">${formatNumber(values.min)}</div></div></div>
-                <div class="col-6"><div class="workspace-mini-kpi p-2"><div class="text-muted small">Maximum</div><div class="fw-semibold">${formatNumber(values.max)}</div></div></div>
-                <div class="col-6"><div class="workspace-mini-kpi p-2"><div class="text-muted small">Std Dev</div><div class="fw-semibold">${formatNumber(values.std)}</div></div></div>
-                <div class="col-6"><div class="workspace-mini-kpi p-2"><div class="text-muted small">Variance</div><div class="fw-semibold">${formatNumber((Number(values.std) || 0) ** 2)}</div></div></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      `).join('');
+    if (state.analysisLoading) {
+      clearAnalysisMessage();
+      hideAnalysisViews();
+      if (els.analysisLoading) els.analysisLoading.classList.remove('d-none');
+      if (els.analysisEmptyState) els.analysisEmptyState.classList.add('d-none');
+      return;
     }
 
-    if (els.analysisInsights) {
-      const insights = state.analysis.insights || [];
-      els.analysisInsights.innerHTML = insights.length
-        ? insights.map((insight, index) => `<div class="alert alert-info mb-0 shadow-sm"><strong>Insight ${index + 1}:</strong> ${escapeHtml(insight)}</div>`).join('')
-        : '<div class="alert alert-light border mb-0">No insights were generated for this dataset.</div>';
-    }
-
-    if (els.analysisCorrelation) {
-      const correlation = state.analysis.correlation || null;
-      if (correlation) {
-        const columns = Object.keys(correlation);
-        els.analysisCorrelation.innerHTML = `
-          <div class="table-responsive">
-            <table class="table table-sm table-bordered align-middle mb-0">
-              <thead class="table-light">
-                <tr><th></th>${columns.map((column) => `<th class="text-nowrap">${escapeHtml(column)}</th>`).join('')}</tr>
-              </thead>
-              <tbody>
-                ${columns.map((rowName) => `<tr><th class="text-nowrap">${escapeHtml(rowName)}</th>${columns.map((colName) => {
-                  const value = correlation[rowName]?.[colName];
-                  const numeric = Number(value);
-                  const intensity = Number.isFinite(numeric) ? Math.min(1, Math.abs(numeric)) : 0;
-                  const bg = numeric >= 0 ? `rgba(37, 99, 235, ${0.08 + intensity * 0.35})` : `rgba(239, 68, 68, ${0.08 + intensity * 0.35})`;
-                  return `<td style="background:${bg}">${Number.isFinite(numeric) ? numeric.toFixed(2) : '-'}</td>`;
-                }).join('')}</tr>`).join('')}
-              </tbody>
-            </table>
-          </div>
-        `;
-      } else {
-        els.analysisCorrelation.innerHTML = '<div class="workspace-chart-placeholder text-muted small">No correlation data available.</div>';
+    if (!hasDataset || !analysis || !Object.keys(analysis).length) {
+      hideAnalysisViews();
+      if (els.analysisLoading) els.analysisLoading.classList.add('d-none');
+      if (els.analysisEmptyState) {
+        els.analysisEmptyState.textContent = hasDataset
+          ? 'No numeric dataset is available for analysis yet.'
+          : 'No dataset has been uploaded yet.';
+        els.analysisEmptyState.classList.remove('d-none');
       }
+      if (els.datasetStatus) els.datasetStatus.textContent = 'Idle';
+      return;
     }
 
-    if (els.analysisOutput) {
-      els.analysisOutput.textContent = JSON.stringify(state.analysis, null, 2);
+    const numericColumns = getNumericColumns();
+    if (!numericColumns.length) {
+      hideAnalysisViews();
+      if (els.analysisLoading) els.analysisLoading.classList.add('d-none');
+      if (els.analysisEmptyState) {
+        els.analysisEmptyState.textContent = 'No numeric columns were detected in this dataset.';
+        els.analysisEmptyState.classList.remove('d-none');
+      }
+      if (els.datasetStatus) els.datasetStatus.textContent = 'Ready';
+      return;
+    }
+
+    clearAnalysisMessage();
+    if (els.analysisLoading) els.analysisLoading.classList.add('d-none');
+    if (els.analysisEmptyState) els.analysisEmptyState.classList.add('d-none');
+    if (els.analysisDashboard) els.analysisDashboard.classList.remove('d-none');
+    if (els.datasetStatus) els.datasetStatus.textContent = 'Analyzed';
+
+    const descriptiveRows = getDescriptiveStatistics();
+    if (els.analysisDescriptiveTable) {
+      const tbody = descriptiveRows.length
+        ? descriptiveRows.map((row) => `
+          <tr>
+            <td class="fw-semibold text-nowrap">${escapeHtml(row.field)}</td>
+            <td>${formatAnalysisValue(row.mean)}</td>
+            <td>${formatAnalysisValue(row.median)}</td>
+            <td>${formatAnalysisValue(row.mode)}</td>
+            <td>${formatAnalysisValue(row.minimum)}</td>
+            <td>${formatAnalysisValue(row.maximum)}</td>
+            <td>${formatAnalysisValue(row.std_dev)}</td>
+            <td>${formatAnalysisValue(row.variance)}</td>
+          </tr>
+        `).join('')
+        : '<tr><td colspan="8" class="text-center text-muted py-4">No numeric fields were found.</td></tr>';
+      const tableBody = els.analysisDescriptiveTable.querySelector('tbody');
+      if (tableBody) tableBody.innerHTML = tbody;
+    }
+
+    const trendAnalysis = getTrendAnalysis();
+    if (els.analysisTrendCards) {
+      const trendEntries = Object.entries(trendAnalysis);
+      els.analysisTrendCards.innerHTML = trendEntries.length
+        ? trendEntries.map(([fieldName, trendData]) => renderTrendCard(fieldName, trendData)).join('')
+        : '<div class="alert alert-light border mb-0">No trend data is available for the expected fields.</div>';
+    }
+
+    const insightList = getInsights();
+    if (els.analysisInsightCards) {
+      els.analysisInsightCards.innerHTML = insightList.length
+        ? renderInsightSummary(insightList)
+        : '<div class="col-12"><div class="alert alert-light border mb-0">No insights were generated for this dataset.</div></div>';
+    }
+
+    destroyAnalysisCharts();
+    Object.entries(trendAnalysis).forEach(([fieldName, trendData]) => {
+      const canvasId = `analysis-trend-${fieldName.replace(/[^a-z0-9]+/gi, '-').toLowerCase()}`;
+      const canvas = document.getElementById(canvasId);
+      if (!canvas || !window.Chart) return;
+
+      const chart = new window.Chart(canvas, {
+        type: 'line',
+        data: {
+          labels: trendData.labels || [],
+          datasets: [
+            {
+              label: fieldName,
+              data: trendData.values || [],
+              borderColor: '#2563eb',
+              backgroundColor: 'rgba(37, 99, 235, 0.18)',
+              tension: 0.3,
+              fill: false,
+              pointRadius: 2,
+            },
+            {
+              label: 'Trend line',
+              data: trendData.trend_line || [],
+              borderColor: '#10b981',
+              backgroundColor: 'rgba(16, 185, 129, 0.12)',
+              borderDash: [6, 4],
+              tension: 0,
+              fill: false,
+              pointRadius: 0,
+            },
+            {
+              label: 'Moving average',
+              data: trendData.moving_average || [],
+              borderColor: '#f59e0b',
+              backgroundColor: 'rgba(245, 158, 11, 0.12)',
+              tension: 0.25,
+              fill: false,
+              pointRadius: 0,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom' },
+          },
+          scales: {
+            x: { title: { display: true, text: 'Row' } },
+            y: { title: { display: true, text: fieldName } },
+          },
+        },
+      });
+      state.analysisCharts.push(chart);
+    });
+
+    if (els.analysisStateAlert) {
+      els.analysisStateAlert.textContent = `Analysis completed for ${numericColumns.length} numeric columns.`;
+      els.analysisStateAlert.className = 'alert alert-success mb-4';
+      els.analysisStateAlert.classList.remove('d-none');
     }
   };
 
@@ -499,46 +902,25 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!els.visualOutput) return;
     destroyCharts();
 
-    const numericColumns = state.previewColumns.filter((column) => inferColumnType(column) === 'Numeric');
-    const categoricalColumns = state.previewColumns.filter((column) => inferColumnType(column) === 'Categorical');
+    const numericColumns = state.previewColumns.filter((column) => inferColumnType(column) === 'Numeric' && !isExcludedVisualizationField(column));
     const firstNumeric = numericColumns[0];
     const secondNumeric = numericColumns[1] || numericColumns[0];
-    const firstCategorical = categoricalColumns[0];
     const rows = state.preview;
 
     const chartDefs = [];
-    if (firstCategorical) {
-      const counts = rows.reduce((accumulator, row) => {
-        const key = String(row[firstCategorical] ?? 'Unknown');
-        accumulator[key] = (accumulator[key] || 0) + 1;
-        return accumulator;
-      }, {});
-      const labels = Object.keys(counts).slice(0, 8);
-      chartDefs.push({
-        title: 'Bar Chart',
-        description: `Distribution of ${firstCategorical}.`,
-        canvasId: 'chart-bar',
-        type: 'bar',
-        data: {
-          labels,
-          datasets: [{ label: firstCategorical, data: labels.map((label) => counts[label]), backgroundColor: 'rgba(37, 99, 235, 0.7)' }],
-        },
-      });
-      chartDefs.push({
-        title: 'Pie Chart',
-        description: `Category share for ${firstCategorical}.`,
-        canvasId: 'chart-pie',
-        type: 'pie',
-        data: {
-          labels,
-          datasets: [{ data: labels.map((label) => counts[label]), backgroundColor: ['#2563eb', '#0ea5e9', '#10b981', '#f59e0b', '#ef4444', '#6366f1', '#14b8a6', '#8b5cf6'] }],
-        },
-      });
-    }
-
     if (firstNumeric) {
       const values = rows.map((row) => row[firstNumeric]);
       const distribution = makeDistribution(values);
+      chartDefs.push({
+        title: 'Bar Chart',
+        description: `Average-focused distribution for ${firstNumeric}.`,
+        canvasId: 'chart-bar',
+        type: 'bar',
+        data: {
+          labels: distribution.labels,
+          datasets: [{ label: firstNumeric, data: distribution.counts, backgroundColor: 'rgba(37, 99, 235, 0.7)' }],
+        },
+      });
       chartDefs.push({
         title: 'Line Chart',
         description: `Row-by-row trend for ${firstNumeric}.`,
@@ -585,39 +967,6 @@ document.addEventListener('DOMContentLoaded', () => {
           }],
         },
         options: { scales: { x: { title: { display: true, text: firstNumeric } }, y: { title: { display: true, text: secondNumeric } } } },
-      });
-    }
-
-    if (numericColumns.length >= 2) {
-      const labels = numericColumns.slice(0, 5);
-      const correlation = labels.map((rowName) => labels.map((columnName) => {
-        if (rowName === columnName) return 1;
-        const x = rows.map((row) => Number(row[rowName])).filter(Number.isFinite);
-        const y = rows.map((row) => Number(row[columnName])).filter(Number.isFinite);
-        const minLength = Math.min(x.length, y.length);
-        if (!minLength) return 0;
-        const xSlice = x.slice(0, minLength);
-        const ySlice = y.slice(0, minLength);
-        const xMean = xSlice.reduce((sum, value) => sum + value, 0) / minLength;
-        const yMean = ySlice.reduce((sum, value) => sum + value, 0) / minLength;
-        let numerator = 0;
-        let xDen = 0;
-        let yDen = 0;
-        for (let index = 0; index < minLength; index += 1) {
-          const xDiff = xSlice[index] - xMean;
-          const yDiff = ySlice[index] - yMean;
-          numerator += xDiff * yDiff;
-          xDen += xDiff * xDiff;
-          yDen += yDiff * yDiff;
-        }
-        return (xDen && yDen) ? numerator / Math.sqrt(xDen * yDen) : 0;
-      }));
-      chartDefs.push({
-        title: 'Heatmap',
-        description: 'Correlation-style heatmap for the strongest numeric fields.',
-        canvasId: 'chart-heatmap',
-        type: 'heatmap',
-        data: { labels, correlation },
       });
     }
 
@@ -816,31 +1165,40 @@ document.addEventListener('DOMContentLoaded', () => {
     updateSummaryCards();
     renderPreview();
     renderCharts();
-    populatePredictionSelectors();
+    updatePredictionSelectors();
     updateHeader();
   };
 
-  const populatePredictionSelectors = () => {
-    const columns = state.previewColumns;
-    if (els.predictTarget) {
-      els.predictTarget.innerHTML = ['<option value="">Select target variable</option>']
-        .concat(columns.map((column) => `<option value="${escapeHtml(column)}">${escapeHtml(column)}</option>`))
-        .join('');
+  function getPredictionConfig() {
+    const attendanceColumn = state.previewColumns.find((column) => normalizeFieldName(column) === normalizeFieldName('Attendance')) || 'Attendance';
+    const targetColumn = state.previewColumns.find((column) => normalizeFieldName(column) === normalizeFieldName('Final Score')) || 'Final Score';
+    return {
+      targetColumn,
+      featureColumns: [attendanceColumn],
+    };
+  }
+
+  function updatePredictionSelectors() {
+    const config = getPredictionConfig();
+    if (els.predictionSummary) {
+      els.predictionSummary.textContent = `Predict ${config.targetColumn} from ${config.featureColumns.join(', ')} using Linear Regression.`;
     }
-    if (els.predictFeatures) {
-      els.predictFeatures.innerHTML = columns.map((column) => `<option value="${escapeHtml(column)}">${escapeHtml(column)}</option>`).join('');
-    }
-  };
+  }
 
   const loadAnalysis = async () => {
     if (!state.datasetId) return;
+    state.analysisLoading = true;
     if (els.datasetStatus) els.datasetStatus.textContent = 'Analyzing…';
+    renderAnalysis();
     const response = await fetch(`/Data/api/analysis/analyze.php?dataset_id=${state.datasetId}`, { credentials: 'same-origin' });
     const json = await response.json();
     if (!json.success) {
+      state.analysisLoading = false;
+      renderAnalysis();
       showAlert(json.message || 'Analysis failed', 'danger');
       return;
     }
+    state.analysisLoading = false;
     state.analysis = json.analysis;
     state.lastAnalysisAt = new Date();
     updateHeader();
@@ -916,18 +1274,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const runPrediction = async () => {
     if (!state.datasetId) return;
-    const target = els.predictTarget?.value?.trim() || '';
-    if (!target) {
-      showAlert('Please choose a target variable.', 'warning');
+    const config = getPredictionConfig();
+    if (!config.targetColumn || !config.featureColumns.length) {
+      showAlert('Attendance and Final Score columns are required for prediction.', 'warning');
       return;
     }
     if (els.runPredictBtn) els.runPredictBtn.disabled = true;
     try {
       const form = new FormData();
       form.append('dataset_id', String(state.datasetId));
-      form.append('target_column', target);
-      form.append('model_type', els.predictModel?.value || 'linear_regression');
-      Array.from(els.predictFeatures?.selectedOptions || []).forEach((option) => form.append('feature_columns[]', option.value));
+      form.append('target_column', config.targetColumn);
+      form.append('model_type', 'linear_regression');
+      config.featureColumns.forEach((column) => form.append('feature_columns[]', column));
       const response = await fetch('/Data/api/prediction/predict.php', { method: 'POST', body: form, credentials: 'same-origin' });
       const json = await response.json();
       if (!json.success) {
@@ -944,11 +1302,6 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   const resetPrediction = () => {
-    if (els.predictTarget) els.predictTarget.value = '';
-    if (els.predictFeatures) {
-      Array.from(els.predictFeatures.options).forEach((option) => { option.selected = false; });
-    }
-    if (els.predictModel) els.predictModel.value = 'linear_regression';
     if (els.predictOutput) els.predictOutput.textContent = 'No predictions yet.';
     if (els.predictionAccuracy) els.predictionAccuracy.textContent = '-';
     if (els.predictionR2) els.predictionR2.textContent = '-';
@@ -1022,10 +1375,12 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     updateHeader();
     updateSummaryCards();
-    populatePredictionSelectors();
+    updatePredictionSelectors();
     workspaceModalInstance?.show();
     if (els.previewArea) els.previewArea.innerHTML = '<div class="p-4 text-muted">Loading preview…</div>';
-    loadPreview().catch((error) => showAlert(error.message || 'Failed to load preview', 'danger'));
+    loadPreview()
+      .then(() => loadAnalysis())
+      .catch((error) => showAlert(error.message || 'Failed to load preview', 'danger'));
   };
 
   const bindEvents = () => {
@@ -1064,7 +1419,9 @@ document.addEventListener('DOMContentLoaded', () => {
   updateHeader();
 
   if (state.datasetId) {
-    loadPreview().then(() => loadCleaningPreview()).catch((error) => showAlert(error.message || 'Workspace failed to load', 'danger'));
+    loadPreview()
+      .then(() => loadAnalysis())
+      .catch((error) => showAlert(error.message || 'Workspace failed to load', 'danger'));
   }
 
   window.DatasetWorkspace = {

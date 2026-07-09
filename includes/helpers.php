@@ -20,6 +20,26 @@ function json_response(array $payload, int $statusCode = 200): never
     exit;
 }
 
+function dataset_absolute_path(string $storedPath): ?string
+{
+    $normalized = str_replace('\\', '/', trim($storedPath));
+    if ($normalized === '') {
+        return null;
+    }
+
+    if (str_starts_with($normalized, '/Data/')) {
+        $normalized = substr($normalized, 6);
+    } elseif (str_starts_with($normalized, 'Data/')) {
+        $normalized = substr($normalized, 5);
+    }
+
+    $normalized = ltrim($normalized, '/');
+    $candidate = dirname(__DIR__) . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $normalized);
+    $absolute = realpath($candidate);
+
+    return $absolute !== false ? $absolute : null;
+}
+
 function request_payload(): array
 {
     $contentType = $_SERVER['CONTENT_TYPE'] ?? '';

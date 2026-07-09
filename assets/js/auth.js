@@ -60,19 +60,6 @@ document.addEventListener('DOMContentLoaded', () => {
   // Student login via student_id
   const studentForm = document.getElementById('studentLoginForm');
   if (studentForm) {
-    const studentIdInput = document.getElementById('student_id');
-    const studentPasswordInput = document.getElementById('student_password');
-
-    // keep password defaulted to student id for convenience
-    if (studentIdInput && studentPasswordInput) {
-      studentIdInput.addEventListener('input', () => {
-        // only change password field if it's empty or matches previous student id
-        if (!studentPasswordInput.value || studentPasswordInput.value === studentIdInput.value) {
-          studentPasswordInput.value = studentIdInput.value;
-        }
-      });
-    }
-
     studentForm.addEventListener('submit', async (event) => {
       event.preventDefault();
       if (alertBox) alertBox.classList.add('d-none');
@@ -108,6 +95,45 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       // Student always goes to summary
+      window.location.href = '/Data/pages/students/summary.php';
+    });
+  }
+
+  const registerForm = document.getElementById('studentRegisterForm');
+  if (registerForm) {
+    registerForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      if (alertBox) alertBox.classList.add('d-none');
+
+      const formData = new FormData(registerForm);
+      formData.set('csrf_token', csrfToken);
+
+      let response;
+      try {
+        response = await fetch('/Data/api/auth/student_register.php', {
+          method: 'POST',
+          headers: { 'X-CSRF-Token': csrfToken },
+          body: formData,
+        });
+      } catch (err) {
+        showAlert('Network error during registration.');
+        return;
+      }
+
+      let result;
+      try {
+        result = await response.json();
+      } catch (err) {
+        const text = await response.text();
+        showAlert('Unexpected server response: ' + text.substring(0, 300));
+        return;
+      }
+
+      if (!result.success) {
+        showAlert(result.message || 'Registration failed.');
+        return;
+      }
+
       window.location.href = '/Data/pages/students/summary.php';
     });
   }

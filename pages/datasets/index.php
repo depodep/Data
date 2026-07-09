@@ -86,9 +86,6 @@ $csrf = csrf_token();
             </div>
           </div>
           <div class="ms-auto d-flex flex-column align-items-end gap-2">
-            <a id="openWorkspaceBtn" class="btn btn-primary shadow-sm" href="#">
-              <i class="bi bi-box-arrow-up-right me-2"></i>Open Workspace
-            </a>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
         </div>
@@ -99,9 +96,8 @@ $csrf = csrf_token();
             <div class="col-12 col-xl-9">
               <div class="card border-0 shadow-sm workspace-section-card mb-4">
                 <div class="card-body p-0">
-                  <ul class="nav nav-tabs px-3 pt-3" id="workspaceTabs" role="tablist">
+                  <ul class="nav nav-tabs px-3 pt-3 sticky-top bg-body z-3 shadow-sm" id="workspaceTabs" role="tablist">
                     <li class="nav-item" role="presentation"><button class="nav-link active" id="tab-overview" data-bs-toggle="tab" data-bs-target="#pane-overview" type="button" role="tab">Overview</button></li>
-                    <li class="nav-item" role="presentation"><button class="nav-link" id="tab-cleaning" data-bs-toggle="tab" data-bs-target="#pane-cleaning" type="button" role="tab">Cleaning</button></li>
                     <li class="nav-item" role="presentation"><button class="nav-link" id="tab-analysis" data-bs-toggle="tab" data-bs-target="#pane-analysis" type="button" role="tab">Analysis</button></li>
                     <li class="nav-item" role="presentation"><button class="nav-link" id="tab-visual" data-bs-toggle="tab" data-bs-target="#pane-visual" type="button" role="tab">Visualization</button></li>
                     <li class="nav-item" role="presentation"><button class="nav-link" id="tab-ml" data-bs-toggle="tab" data-bs-target="#pane-ml" type="button" role="tab">Machine Learning</button></li>
@@ -110,15 +106,6 @@ $csrf = csrf_token();
 
                   <div class="tab-content p-3 p-lg-4">
                     <div class="tab-pane fade show active" id="pane-overview" role="tabpanel">
-                      <div class="row g-3 mb-4">
-                        <div class="col-6 col-xl-4"><div class="card border-0 shadow-sm workspace-stat-card h-100"><div class="card-body"><div class="text-muted small">Rows</div><div class="h4 mb-0" id="workspaceSummaryRows">-</div></div></div></div>
-                        <div class="col-6 col-xl-4"><div class="card border-0 shadow-sm workspace-stat-card h-100"><div class="card-body"><div class="text-muted small">Columns</div><div class="h4 mb-0" id="workspaceSummaryColumns">-</div></div></div></div>
-                        <div class="col-6 col-xl-4"><div class="card border-0 shadow-sm workspace-stat-card h-100"><div class="card-body"><div class="text-muted small">Numeric Columns</div><div class="h4 mb-0" id="workspaceSummaryNumeric">-</div></div></div></div>
-                        <div class="col-6 col-xl-4"><div class="card border-0 shadow-sm workspace-stat-card h-100"><div class="card-body"><div class="text-muted small">Categorical Columns</div><div class="h4 mb-0" id="workspaceSummaryCategorical">-</div></div></div></div>
-                        <div class="col-6 col-xl-4"><div class="card border-0 shadow-sm workspace-stat-card h-100"><div class="card-body"><div class="text-muted small">Missing Values</div><div class="h4 mb-0" id="workspaceSummaryMissing">-</div></div></div></div>
-                        <div class="col-6 col-xl-4"><div class="card border-0 shadow-sm workspace-stat-card h-100"><div class="card-body"><div class="text-muted small">Duplicate Rows</div><div class="h4 mb-0" id="workspaceSummaryDuplicates">-</div></div></div></div>
-                      </div>
-
                       <div class="card border-0 shadow-sm workspace-preview-shell mb-4">
                         <div class="card-header bg-white border-0 py-3">
                           <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
@@ -147,95 +134,85 @@ $csrf = csrf_token();
                         </div>
                       </div>
                     </div>
-
-                    <div class="tab-pane fade" id="pane-cleaning" role="tabpanel">
-                      <div class="row g-4">
-                        <div class="col-12 col-xl-6">
-                          <div class="card border-0 shadow-sm workspace-section-card h-100">
-                            <div class="card-body">
-                              <div class="d-flex justify-content-between align-items-center mb-3">
-                                <div>
-                                  <h6 class="mb-1">Data Cleaning</h6>
-                                  <p class="text-muted small mb-0">Inspect issues, run cleanup, and review the report.</p>
-                                </div>
-                                <span class="badge text-bg-warning-subtle text-warning-emphasis">Automated</span>
-                              </div>
-                              <div class="row g-3 mb-3">
-                                <div class="col-6"><div class="workspace-mini-kpi p-3"><div class="text-muted small">Missing Values</div><div class="h5 mb-0" id="workspaceCleaningMissing">-</div></div></div>
-                                <div class="col-6"><div class="workspace-mini-kpi p-3"><div class="text-muted small">Duplicate Rows</div><div class="h5 mb-0" id="workspaceCleaningDuplicates">-</div></div></div>
-                                <div class="col-6"><div class="workspace-mini-kpi p-3"><div class="text-muted small">Inconsistent Values</div><div class="h5 mb-0" id="workspaceCleaningInconsistent">-</div></div></div>
-                                <div class="col-6"><div class="workspace-mini-kpi p-3"><div class="text-muted small">Invalid Data Types</div><div class="h5 mb-0" id="workspaceCleaningInvalid">-</div></div></div>
-                              </div>
-                              <div class="d-flex flex-wrap gap-2 mb-4">
-                                <button type="button" id="runCleanBtn" class="btn btn-primary">Clean Dataset</button>
-                                <button type="button" id="previewCleanBtn" class="btn btn-outline-secondary">Preview Cleaned</button>
-                              </div>
-                              <div class="row g-3">
-                                <div class="col-12 col-lg-6">
-                                  <label class="form-label" for="missingStrategy">Missing values strategy</label>
-                                  <select id="missingStrategy" class="form-select">
-                                    <option value="none">No automatic fill</option>
-                                    <option value="fill_zero">Fill zeros</option>
-                                    <option value="fill_mean">Fill mean</option>
-                                  </select>
-                                </div>
-                                <div class="col-12 col-lg-6 d-flex align-items-end">
-                                  <div class="form-check mt-2">
-                                    <input class="form-check-input" type="checkbox" id="optRemoveDuplicates" checked>
-                                    <label class="form-check-label" for="optRemoveDuplicates">Remove duplicate rows</label>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                        <div class="col-12 col-xl-6">
-                          <div class="card border-0 shadow-sm workspace-section-card h-100">
-                            <div class="card-body">
-                              <h6 class="mb-2">Cleaning Report</h6>
-                              <div class="row g-3 mb-3">
-                                <div class="col-6"><div class="workspace-mini-kpi p-3"><div class="text-muted small">Rows Removed</div><div class="h5 mb-0" id="workspaceRowsRemoved">-</div></div></div>
-                                <div class="col-6"><div class="workspace-mini-kpi p-3"><div class="text-muted small">Duplicates Removed</div><div class="h5 mb-0" id="workspaceDuplicatesRemoved">-</div></div></div>
-                                <div class="col-6"><div class="workspace-mini-kpi p-3"><div class="text-muted small">Values Fixed</div><div class="h5 mb-0" id="workspaceValuesFixed">-</div></div></div>
-                                <div class="col-6"><div class="workspace-mini-kpi p-3"><div class="text-muted small">Success Rate</div><div class="h5 mb-0" id="workspaceCleaningSuccess">-</div></div></div>
-                              </div>
-                              <pre id="cleanOutput" class="p-3 bg-light rounded-3 small mb-0">No cleaning report yet.</pre>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
                     <div class="tab-pane fade" id="pane-analysis" role="tabpanel">
                       <div class="card border-0 shadow-sm workspace-section-card mb-4">
                         <div class="card-body">
                           <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
                             <div>
-                              <h6 class="mb-1">Statistical Analysis</h6>
-                              <p class="text-muted small mb-0">Automatic descriptive statistics for numeric columns.</p>
+                              <h6 class="mb-1">Statistical Analysis Dashboard</h6>
+                              <p class="text-muted small mb-0">Dynamic analysis for numeric columns only, including per-field summary, trend, and insights.</p>
                             </div>
-                            <button id="runAnalyzeBtn" class="btn btn-outline-primary" type="button">Run Analysis</button>
                           </div>
-                          <div id="analysisStatsGrid" class="row g-3 mb-4"></div>
-                          <div class="row g-3">
-                            <div class="col-12 col-xl-7">
-                              <div class="card border-0 shadow-sm workspace-section-card h-100">
-                                <div class="card-body">
-                                  <h6 class="mb-3">Insights</h6>
-                                  <div id="analysisInsights" class="d-grid gap-2"></div>
+
+                          <div id="analysisStateAlert" class="alert alert-info d-none mb-4" role="alert"></div>
+
+                          <div id="analysisLoading" class="d-none text-center py-5">
+                            <div class="spinner-border text-primary mb-3" role="status" aria-hidden="true"></div>
+                            <div class="text-muted">Calculating statistics from the uploaded dataset…</div>
+                          </div>
+
+                          <div id="analysisEmptyState" class="alert alert-warning mb-0 d-none" role="alert">No dataset has been uploaded yet.</div>
+
+                          <div id="analysisDashboard" class="d-none">
+                            <div class="card border-0 shadow-sm workspace-section-card mb-4">
+                              <div class="card-body">
+                                <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+                                  <div>
+                                    <h6 class="mb-1">Descriptive Statistics</h6>
+                                    <p class="text-muted small mb-0">Each numeric field is summarized in a responsive table.</p>
+                                  </div>
+                                  <span class="badge text-bg-light text-dark">Numeric columns only</span>
+                                </div>
+                                <div class="table-responsive">
+                                  <table class="table table-striped table-hover align-middle mb-0" id="analysisDescriptiveTable">
+                                    <thead class="table-light">
+                                      <tr>
+                                        <th>Field</th>
+                                        <th>Mean</th>
+                                        <th>Median</th>
+                                        <th>Mode</th>
+                                        <th>Minimum</th>
+                                        <th>Maximum</th>
+                                        <th>Standard Deviation</th>
+                                        <th>Variance</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                  </table>
                                 </div>
                               </div>
                             </div>
-                            <div class="col-12 col-xl-5">
-                              <div class="card border-0 shadow-sm workspace-section-card h-100">
-                                <div class="card-body">
-                                  <h6 class="mb-3">Correlation Matrix</h6>
-                                  <div id="analysisCorrelation" class="workspace-chart-placeholder text-muted small">Run analysis to populate the matrix.</div>
+
+                            <div class="row g-4 mb-4">
+                              <div class="col-12">
+                                <div class="card border-0 shadow-sm workspace-section-card h-100">
+                                  <div class="card-body">
+                                    <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+                                      <div>
+                                        <h6 class="mb-1">Trend Analysis</h6>
+                                        <p class="text-muted small mb-0">Quiz Score, Midterm Score, Final Score, and Attendance trends.</p>
+                                      </div>
+                                      <span class="badge text-bg-success-subtle text-success-emphasis">Chart.js</span>
+                                    </div>
+                                    <div class="d-grid gap-3" id="analysisTrendCards"></div>
+                                  </div>
                                 </div>
                               </div>
                             </div>
+
+                            <div class="card border-0 shadow-sm workspace-section-card">
+                              <div class="card-body">
+                                <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+                                  <div>
+                                    <h6 class="mb-1">Insights</h6>
+                                    <p class="text-muted small mb-0">Auto-generated numeric highlights from the uploaded dataset.</p>
+                                  </div>
+                                  <span class="badge text-bg-info-subtle text-info-emphasis">Auto-generated</span>
+                                </div>
+                                <div class="row g-3" id="analysisInsightCards"></div>
+                              </div>
+                            </div>
                           </div>
-                          <pre id="analysisOutput" class="p-3 bg-light rounded-3 small mt-3 mb-0">No analysis yet.</pre>
                         </div>
                       </div>
                     </div>
@@ -261,26 +238,23 @@ $csrf = csrf_token();
                           <div class="card border-0 shadow-sm workspace-section-card h-100">
                             <div class="card-body">
                               <h6 class="mb-2">Prediction</h6>
-                              <p class="text-muted small mb-4">Select a target, choose feature variables, and train a regression model.</p>
-                              <div class="mb-3">
-                                <label class="form-label" for="predictTarget">Target Variable</label>
-                                <select id="predictTarget" class="form-select"></select>
-                              </div>
-                              <div class="mb-3">
-                                <label class="form-label" for="predictFeatures">Feature Variables</label>
-                                <select id="predictFeatures" class="form-select" multiple size="6"></select>
-                                <div class="form-text">Hold Ctrl/Command to select multiple features.</div>
-                              </div>
-                              <div class="mb-3">
-                                <label class="form-label" for="predictModel">Regression Model</label>
-                                <select id="predictModel" class="form-select">
-                                  <option value="linear_regression">Linear Regression</option>
-                                  <option value="ridge">Ridge Regression</option>
-                                  <option value="lasso">Lasso Regression</option>
-                                </select>
+                              <p class="text-muted small mb-3" id="predictionSummary">Predict Final Score from Attendance using Linear Regression.</p>
+                              <div class="row g-3 mb-4">
+                                <div class="col-6">
+                                  <div class="workspace-mini-kpi p-3 h-100">
+                                    <div class="text-muted small">Target</div>
+                                    <div class="h5 mb-0">Final Score</div>
+                                  </div>
+                                </div>
+                                <div class="col-6">
+                                  <div class="workspace-mini-kpi p-3 h-100">
+                                    <div class="text-muted small">Feature</div>
+                                    <div class="h5 mb-0">Attendance</div>
+                                  </div>
+                                </div>
                               </div>
                               <div class="d-flex flex-wrap gap-2">
-                                <button id="runPredictBtn" class="btn btn-primary" type="button">Train Model</button>
+                                <button id="runPredictBtn" class="btn btn-primary" type="button">Run Prediction</button>
                                 <button id="resetPredictBtn" class="btn btn-outline-secondary" type="button">Reset</button>
                               </div>
                             </div>
@@ -291,12 +265,12 @@ $csrf = csrf_token();
                             <div class="card-body">
                               <h6 class="mb-3">Prediction Result</h6>
                               <div class="row g-3 mb-3" id="predictionMetricsGrid">
-                                <div class="col-6 col-lg-3"><div class="workspace-mini-kpi p-3"><div class="text-muted small">Accuracy</div><div class="h5 mb-0" id="predictionAccuracy">-</div></div></div>
+                                <div class="col-6 col-lg-3"><div class="workspace-mini-kpi p-3"><div class="text-muted small">Prediction Score</div><div class="h5 mb-0" id="predictionAccuracy">-</div></div></div>
                                 <div class="col-6 col-lg-3"><div class="workspace-mini-kpi p-3"><div class="text-muted small">R² Score</div><div class="h5 mb-0" id="predictionR2">-</div></div></div>
                                 <div class="col-6 col-lg-3"><div class="workspace-mini-kpi p-3"><div class="text-muted small">MAE</div><div class="h5 mb-0" id="predictionMae">-</div></div></div>
                                 <div class="col-6 col-lg-3"><div class="workspace-mini-kpi p-3"><div class="text-muted small">RMSE</div><div class="h5 mb-0" id="predictionRmse">-</div></div></div>
                               </div>
-                              <div id="predictionMatrix" class="workspace-chart-placeholder text-muted small mb-3">Confusion matrix will appear for classification workflows.</div>
+                              <div id="predictionMatrix" class="workspace-chart-placeholder text-muted small mb-3">Predicted values will appear here for the Attendance-based regression.</div>
                               <pre id="predictOutput" class="p-3 bg-light rounded-3 small mb-0">No predictions yet.</pre>
                             </div>
                           </div>
@@ -330,45 +304,18 @@ $csrf = csrf_token();
 
               <div class="col-12 col-xl-3">
                 <div class="workspace-sidebar">
-                  <div class="card border-0 shadow-sm mb-4">
-                    <div class="card-body">
-                      <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h6 class="mb-0">Dataset Summary</h6>
-                        <span class="badge text-bg-light text-dark" id="workspaceDatasetStatus">Idle</span>
-                      </div>
-                      <div class="d-grid gap-3">
-                        <div class="workspace-mini-kpi p-3"><div class="text-muted small">Rows</div><div class="h5 mb-0" id="workspaceSidebarRows">-</div></div>
-                        <div class="workspace-mini-kpi p-3"><div class="text-muted small">Columns</div><div class="h5 mb-0" id="workspaceSidebarColumns">-</div></div>
-                        <div class="workspace-mini-kpi p-3"><div class="text-muted small">Missing Values</div><div class="h5 mb-0" id="workspaceSidebarMissing">-</div></div>
-                        <div class="workspace-mini-kpi p-3"><div class="text-muted small">Duplicates</div><div class="h5 mb-0" id="workspaceSidebarDuplicates">-</div></div>
-                        <div class="workspace-mini-kpi p-3"><div class="text-muted small">Charts Generated</div><div class="h5 mb-0" id="workspaceChartsGenerated">-</div></div>
-                        <div class="workspace-mini-kpi p-3"><div class="text-muted small">Prediction Status</div><div class="h5 mb-0" id="workspacePredictionStatus">Not run</div></div>
-                        <div class="workspace-mini-kpi p-3"><div class="text-muted small">Last Analysis Time</div><div class="h6 mb-0" id="workspaceLastAnalysisTime">-</div></div>
-                      </div>
-                    </div>
-                  </div>
-
                   <div class="card border-0 shadow-sm">
                     <div class="card-body">
-                      <h6 class="mb-3">Workspace Notes</h6>
-                      <div class="text-muted small mb-2">• Preview shows the first 20 rows.</div>
-                      <div class="text-muted small mb-2">• Cleaning, analysis, and machine learning use the existing backend APIs.</div>
-                      <div class="text-muted small">• Charts resize responsively and can be expanded or downloaded individually.</div>
+                      <h6 class="mb-3">Analytics</h6>
+                      <div class="d-grid gap-2 small text-muted">
+                        <div>Loads after the preview is ready</div>
+                        <div>Shows numeric trends only</div>
+                        <div>Refreshes as soon as data is available</div>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
-          <div class="modal-footer border-0 pt-0 bg-white">
-            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 w-100">
-              <div class="d-flex flex-wrap gap-2">
-                <button type="button" class="btn btn-primary" id="workspaceAnalyzeBtn"><i class="bi bi-graph-up me-2"></i>Analyze Dataset</button>
-                <button type="button" class="btn btn-outline-primary" id="workspaceVisualizeBtn"><i class="bi bi-bar-chart me-2"></i>Generate Visualizations</button>
-                <button type="button" class="btn btn-outline-primary" id="workspaceMachineLearningBtn"><i class="bi bi-cpu me-2"></i>Run Machine Learning</button>
-                <button type="button" class="btn btn-outline-secondary" id="workspaceExportResultsBtn"><i class="bi bi-download me-2"></i>Export Results</button>
-              </div>
-              <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close Workspace</button>
             </div>
           </div>
         </div>
@@ -386,26 +333,65 @@ $csrf = csrf_token();
           </div>
           <div class="modal-body">
             <input type="hidden" name="csrf_token" value="<?php echo e($csrf); ?>">
-            <div class="mb-3">
-              <label class="form-label">Dataset file (CSV)</label>
-              <input type="file" name="dataset" class="form-control" accept=".csv" required>
+            <input type="hidden" name="stored" id="uploadStored">
+            <div id="uploadAlert" class="alert d-none" role="alert"></div>
+            <div class="row g-3">
+              <div class="col-12">
+                <label class="form-label">Dataset file (CSV)</label>
+                <input type="file" id="uploadDatasetFile" name="dataset" class="form-control" accept=".csv">
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label">Dataset name</label>
+                <input type="text" name="dataset_name" id="uploadDatasetName" class="form-control" placeholder="Optional">
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label">Shared scope</label>
+                <select name="shared_scope" id="uploadSharedScope" class="form-select">
+                  <option value="private" selected>Private</option>
+                  <option value="shared">Shared</option>
+                  <option value="public">Public</option>
+                </select>
+              </div>
+              <div class="col-12">
+                <label class="form-label">Description</label>
+                <textarea name="description" id="uploadDescription" class="form-control" rows="3" placeholder="Optional description"></textarea>
+              </div>
             </div>
-            <div class="mb-3">
-              <label class="form-label">Dataset name</label>
-              <input type="text" name="dataset_name" class="form-control">
-            </div>
-            <div class="mb-3">
-              <label class="form-label">Description</label>
-              <textarea name="description" class="form-control" rows="3"></textarea>
-            </div>
-            <input type="hidden" name="shared_scope" value="private">
-            <div class="mb-3">
-              <div class="form-text">Preview will be shown before final upload; datasets are private by default.</div>
+
+            <div class="mt-4 border rounded-3 p-3 bg-light">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                  <h6 class="mb-1">Upload Preview</h6>
+                  <p class="text-muted small mb-0">Preview the first rows and apply cleaning options before saving.</p>
+                </div>
+                <div class="btn-group btn-group-sm" role="group" aria-label="Upload preview actions">
+                  <button type="button" id="uploadPreviewBtn" class="btn btn-outline-primary">Preview Data</button>
+                  <button type="button" id="uploadCleanPreviewBtn" class="btn btn-outline-secondary">Preview Cleaned</button>
+                </div>
+              </div>
+              <div id="uploadPreviewControls" class="row g-3 mb-3 d-none">
+                <div class="col-12 col-md-6">
+                  <label class="form-label small">Missing values strategy</label>
+                  <select id="uploadMissingStrategy" class="form-select form-select-sm">
+                    <option value="none" selected>No automatic fill</option>
+                    <option value="fill_zero">Fill zeros</option>
+                    <option value="fill_mean">Fill mean</option>
+                  </select>
+                </div>
+                <div class="col-12 col-md-6 d-flex align-items-end">
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="uploadRemoveDuplicates" checked>
+                    <label class="form-check-label" for="uploadRemoveDuplicates">Remove duplicate rows</label>
+                  </div>
+                </div>
+              </div>
+
+              <div id="uploadPreviewArea" class="border rounded-3 p-3 bg-white small text-muted">Select a CSV file and click Preview Data to inspect rows and cleaning effects.</div>
             </div>
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-            <button type="submit" class="btn btn-primary">Upload</button>
+            <button type="submit" class="btn btn-primary" id="uploadSaveBtn">Save to Workspace</button>
           </div>
         </form>
       </div>
@@ -416,5 +402,6 @@ $csrf = csrf_token();
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="/Data/assets/js/datasets_workspace.js"></script>
   <script src="/Data/assets/js/datasets.js"></script>
+  <script src="/Data/assets/js/datasets_upload.js"></script>
 </body>
 </html>

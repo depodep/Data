@@ -81,23 +81,32 @@ if ($header !== $required) {
 // Support preview and cleaning modes
 $mode = $_POST['mode'] ?? '';
 
-// helper to read N rows (excluding header)
+// helper to read N rows (excluding header), returned as associative arrays
 $read_rows = function (string $path, int $limit = 10) {
     $out = [];
-    if (($h = fopen($path, 'r')) === false) return $out;
+    if (($h = fopen($path, 'r')) === false) return ['header' => [], 'rows' => []];
     $hdr = fgetcsv($h);
     $count = 0;
     while (($row = fgetcsv($h)) !== false && $count < $limit) {
-        $out[] = $row;
+        if (is_array($hdr) && count($hdr) === count($row)) {
+            $out[] = array_combine($hdr, $row);
+        } else {
+            $out[] = $row;
+        }
         $count++;
     }
     fclose($h);
-    return ['header' => $hdr, 'rows' => $out];
+    return ['header' => $hdr ?: [], 'rows' => $out];
 };
 
 if ($mode === 'preview') {
     $preview = $read_rows($destination, 10);
-    json_response(['success' => true, 'preview' => $preview, 'stored' => $storedName]);
+    json_response([
+        'success' => true,
+        'rows' => $preview['rows'],
+        'header' => $preview['header'],
+        'stored' => $storedName,
+    ]);
 }
 
 if ($mode === 'clean') {
@@ -105,7 +114,15 @@ if ($mode === 'clean') {
     $cleanedName = 'cleaned_' . $storedName;
     $cleanedPath = $uploadsDir . DIRECTORY_SEPARATOR . $cleanedName;
     $script = __DIR__ . '/../../python/clean_dataset.py';
-    $cmd = escapeshellcmd(PHP_BINARY) . ' ' . escapeshellarg($script) . ' ' . escapeshellarg($destination) . ' ' . escapeshellarg($cleanedPath);
+    $options = [];
+    if (!empty($_POST['remove_duplicates'])) {
+        $options['remove_duplicates'] = filter_var($_POST['remove_duplicates'], FILTER_VALIDATE_BOOLEAN);
+    }
+    if (!empty($_POST['missing_strategy'])) {
+        $options['missing_strategy'] = $_POST['missing_strategy'];
+    }
+    $encodedOptions = json_encode($options, JSON_UNESCAPED_UNICODE);
+    $cmd = escapeshellcmd(PHP_BINARY) . ' ' . escapeshellarg($script) . ' ' . escapeshellarg($destination) . ' ' . escapeshellarg($cleanedPath) . ' ' . escapeshellarg($encodedOptions);
     // attempt to run
     $raw = null; $out = null; $exit = 0;
     @exec($cmd . ' 2>&1', $out, $exit);
@@ -115,7 +132,7 @@ if ($mode === 'clean') {
     }
 
     $preview = $read_rows($cleanedPath, 10);
-    json_response(['success' => true, 'preview' => $preview, 'cleaned' => $cleanedName]);
+    json_response(['success' => true, 'preview' => $preview, 'cleaned' => $cleanedName, 'stored' => $storedName]);
 }
 
 // Finalize: count rows and insert, prefer cleaned file if exists

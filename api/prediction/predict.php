@@ -10,9 +10,9 @@ $user = current_user();
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') json_response(['success' => false, 'message' => 'Method not allowed'], 405);
 
 $datasetId = isset($_POST['dataset_id']) ? (int) $_POST['dataset_id'] : 0;
-$target = trim((string) ($_POST['target_column'] ?? ''));
-$modelType = trim((string) ($_POST['model_type'] ?? 'linear_regression'));
-$featureColumns = $_POST['feature_columns'] ?? [];
+$target = 'Final Score';
+$modelType = 'linear_regression';
+$featureColumns = ['Attendance'];
 $sync = isset($_POST['sync']) && in_array((string)$_POST['sync'], ['1','true'], true);
 
 if ($datasetId <= 0 || $target === '') json_response(['success' => false, 'message' => 'Missing dataset_id or target_column'], 422);
@@ -41,7 +41,8 @@ if ($sync) {
 
     $python = 'python';
     $script = __DIR__ . '/../../python/predict_dataset.py';
-    $cmd = escapeshellcmd($python) . ' ' . escapeshellarg($script) . ' ' . escapeshellarg($abs) . ' ' . escapeshellarg($target) . ' ' . escapeshellarg($outPath);
+    $featureArg = implode(',', $featureColumns);
+    $cmd = escapeshellcmd($python) . ' ' . escapeshellarg($script) . ' ' . escapeshellarg($abs) . ' ' . escapeshellarg($target) . ' ' . escapeshellarg($outPath) . ' ' . escapeshellarg($featureArg);
 
     $raw = shell_exec($cmd);
     if ($raw === null) json_response(['success' => false, 'message' => 'Failed to execute prediction script'], 500);
@@ -62,7 +63,7 @@ if ($sync) {
         'run_by_user_id' => (int)$user['user_id'],
         'model_type' => $modelType,
         'target_column' => $target,
-        'feature_columns_json' => json_encode($featureColumns ?: []),
+        'feature_columns_json' => json_encode($featureColumns, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
         'training_rows' => $result['training_rows'] ?? 0,
         'testing_rows' => $result['testing_rows'] ?? 0,
         'accuracy' => $result['r2'] ?? null,

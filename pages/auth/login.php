@@ -29,7 +29,7 @@ $csrfToken = csrf_token();
                         <div class="mb-4 text-center">
                             <div class="app-brand-icon mb-3"><i class="fa-solid fa-graduation-cap"></i></div>
                             <h1 class="h3 mb-2"><?php echo e(APP_NAME); ?></h1>
-                            <p class="text-muted mb-0">Sign in to manage academic data.</p>
+                            <p class="text-muted mb-0">Sign in to manage academic data or register as a student.</p>
                         </div>
 
                                                 <div id="loginAlert" class="alert d-none" role="alert"></div>
@@ -68,9 +68,12 @@ $csrfToken = csrf_token();
                                                             </div>
                                                             <div class="mb-3">
                                                                 <label for="student_password" class="form-label">Password</label>
-                                                                <input type="password" class="form-control form-control-lg" id="student_password" name="password" placeholder="Leave blank to use Student ID">
+                                                                <input type="password" class="form-control form-control-lg" id="student_password" name="password" required autocomplete="current-password">
                                                             </div>
                                                             <button type="submit" class="btn btn-secondary btn-lg w-100">Student Login</button>
+                                                            <div class="text-center mt-3">
+                                                                <a href="/Data/pages/auth/student_register.php" class="small text-decoration-none">New student? Register here</a>
+                                                            </div>
                                                         </form>
                                                     </div>
                                                 </div>
