@@ -161,21 +161,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const option = roleSelect.options[roleSelect.selectedIndex];
     if (!option) return;
     const slug = option.dataset.slug;
-    const studentContainer = document.getElementById('student_id').closest('div');
-    const employeeContainer = document.getElementById('employee_id').closest('div');
+    const studentContainer = document.getElementById('student_container');
+    const employeeContainer = document.getElementById('employee_container');
     
     if (slug === 'student') {
-      studentContainer.classList.remove('d-none');
+      studentContainer.style.display = '';
       document.getElementById('student_id').required = true;
-      employeeContainer.classList.add('d-none');
+      employeeContainer.style.display = 'none';
       document.getElementById('employee_id').required = false;
     } else if (slug === 'teacher' || slug === 'administrator') {
-      studentContainer.classList.add('d-none');
+      studentContainer.style.display = 'none';
       document.getElementById('student_id').required = false;
-      employeeContainer.classList.remove('d-none');
+      employeeContainer.style.display = '';
     } else {
-      studentContainer.classList.remove('d-none');
-      employeeContainer.classList.remove('d-none');
+      studentContainer.style.display = '';
+      employeeContainer.style.display = '';
     }
   };
   roleSelect.addEventListener('change', handleRoleChange);

@@ -197,10 +197,9 @@ $activeSubPage = 'upload';
                   <p class="text-muted small mb-0">Review the committed dataset output before saving.</p>
                 </div>
                 <div id="finalOutputArea" class="border rounded-3 p-3 bg-white text-muted" style="min-height: 320px;">Final dataset output appears here after applying preparation.</div>
-                <div class="d-flex justify-content-end gap-2 mt-3">
-                  <button type="button" id="resetBtn" class="btn btn-outline-danger">Reset Changes</button>
-                  <button type="button" id="saveDatasetBtn" class="btn btn-success">Save to Dataset</button>
-                  <button type="button" id="saveAndContinueBtn" class="btn btn-success">Save &amp; Continue</button>
+                <div class="d-flex justify-content-end gap-2">
+                  <button type="button" id="resetChangesBtn" class="btn btn-outline-danger">Cancel</button>
+                  <button type="button" id="saveDatasetBtn" class="btn btn-primary">Save to Dataset</button>
                 </div>
               </div>
             </div>

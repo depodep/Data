@@ -63,5 +63,6 @@ json_response([
         'per_page' => $perPage,
         'total' => $total,
         'total_pages' => (int) max(1, ceil($total / $perPage)),
+        'user_role' => $user['role_slug'] ?? '',
     ],
 ]);

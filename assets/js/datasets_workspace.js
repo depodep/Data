@@ -572,9 +572,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
     els.columnInfo.innerHTML = visibleColumns.map((column) => {
       const values = rows.map((row) => row[column]).filter((value) => value !== null && value !== undefined && value !== '');
-      const uniqueValues = new Set(values.map((value) => String(value))).size;
+      const uniqueSet = new Set(values.map((value) => String(value)));
+      const uniqueValues = uniqueSet.size;
       const missingCount = rows.length - values.length;
-      const sampleData = values.length ? String(values[0]) : '-';
+      
+      const colType = inferColumnType(column);
+      let sampleDataHtml = '';
+      if (colType === 'Categorical') {
+          const uniqueList = Array.from(uniqueSet).slice(0, 10);
+          sampleDataHtml = `<div class="small text-muted mb-1">Values:</div><div class="small fw-semibold text-break">${escapeHtml(uniqueList.join(', '))} ${uniqueValues > 10 ? '...' : ''}</div>`;
+      } else {
+          const numValues = values.map(v => toNumber(v)).filter(v => v !== null);
+          if (numValues.length > 0) {
+              const min = Math.min(...numValues);
+              const max = Math.max(...numValues);
+              const avg = numValues.reduce((a, b) => a + b, 0) / numValues.length;
+              sampleDataHtml = `<div class="small">Min: <span class="fw-semibold">${formatNumber(min)}</span> | Max: <span class="fw-semibold">${formatNumber(max)}</span> | Avg: <span class="fw-semibold">${formatNumber(avg)}</span></div>`;
+          } else {
+              sampleDataHtml = `<div class="small">Sample: <span class="fw-semibold">-</span></div>`;
+          }
+      }
+
       return `
         <div class="col-12 col-md-6 col-xl-4">
           <div class="card border-0 shadow-sm workspace-section-card h-100">
@@ -582,13 +600,12 @@ document.addEventListener('DOMContentLoaded', () => {
               <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
                 <div>
                   <h6 class="mb-1">${escapeHtml(column)}</h6>
-                  <div class="text-muted small">${escapeHtml(inferColumnType(column))}</div>
+                  <div class="text-muted small">${escapeHtml(colType)}</div>
                 </div>
                 <span class="badge text-bg-light text-dark">${uniqueValues} unique</span>
               </div>
               <div class="small text-muted mb-1">${missingCount} missing</div>
-              <div class="small text-muted mb-1">${uniqueValues} unique values</div>
-              <div class="small">Sample: <span class="fw-semibold">${escapeHtml(sampleData)}</span></div>
+              ${sampleDataHtml}
             </div>
           </div>
         </div>
@@ -647,11 +664,12 @@ document.addEventListener('DOMContentLoaded', () => {
         <table class="table table-hover table-striped mb-0 align-middle">
           <thead class="table-light position-sticky top-0">
             <tr>
+              <th>#</th>
               ${columns.map((column) => `<th role="button" data-sort-key="${escapeHtml(column)}" class="text-nowrap">${escapeHtml(column)}${sortIndicator(column)}</th>`).join('')}
             </tr>
           </thead>
           <tbody>
-            ${visibleRows.map((row) => `<tr>${columns.map((column) => `<td>${escapeHtml(row[column] ?? '')}</td>`).join('')}</tr>`).join('')}
+            ${visibleRows.map((row, index) => `<tr><td><span class="text-muted small">${start + index + 1}</span></td>${columns.map((column) => `<td>${escapeHtml(row[column] ?? '')}</td>`).join('')}</tr>`).join('')}
           </tbody>
         </table>
       </div>

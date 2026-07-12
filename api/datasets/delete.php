@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../../includes/bootstrap.php';
-require_role(['administrator', 'teacher']);
+require_role(['administrator']);
 
 $user = current_user();
 
@@ -25,9 +25,7 @@ if (!$dataset) {
     json_response(['success' => false, 'message' => 'Dataset not found.'], 404);
 }
 
-if ($user['role_slug'] !== 'administrator' && $dataset['owner_user_id'] !== $user['user_id']) {
-    json_response(['success' => false, 'message' => 'Permission denied.'], 403);
-}
+// Removed redundant owner check since only administrators can access this now.
 
 // Optional: remove physical file
 if (!empty($dataset['file_path']) && file_exists($dataset['file_path'])) {

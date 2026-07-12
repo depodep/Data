@@ -29,7 +29,6 @@ document.addEventListener('DOMContentLoaded', () => {
     saveDatasetBtn: document.getElementById('saveDatasetBtn'),
     cancelBtn: document.getElementById('cancelBtn'),
     resetBtn: document.getElementById('resetBtn'),
-    saveAndContinueBtn: document.getElementById('saveAndContinueBtn'),
   };
 
   const requiredFields = ['Student ID', 'Student Name', 'Course', 'Year Level', 'Section', 'Subject'];
@@ -530,7 +529,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const hasErrors = state.validation.totalErrors > 0;
     if (els.saveDatasetBtn) els.saveDatasetBtn.disabled = hasErrors;
-    if (els.saveAndContinueBtn) els.saveAndContinueBtn.disabled = hasErrors;
     if (els.applyPreparationBtn) els.applyPreparationBtn.disabled = hasErrors;
   };
 
@@ -959,7 +957,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  const saveDataset = async (continueToAnalysis = false) => {
+  const saveDataset = async () => {
     if (!state.validated) {
       showAlert('Validate the dataset before saving.', 'warning');
       return;
@@ -999,13 +997,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       showAlert(json.message || 'Dataset saved successfully.', 'success');
       if (json.dataset_id) {
-        if (continueToAnalysis) {
-          window.location.href = `/Data/pages/datasets/workspace.php?id=${encodeURIComponent(json.dataset_id)}`;
-          return;
-        }
-        setTimeout(() => {
-          window.location.href = `/Data/pages/datasets/index.php`;
-        }, 800);
+        window.location.href = `/Data/pages/datasets/workspace.php?id=${encodeURIComponent(json.dataset_id)}`;
       }
     } catch (error) {
       showAlert(error.message || 'Unable to save dataset.', 'danger');
@@ -1062,7 +1054,6 @@ document.addEventListener('DOMContentLoaded', () => {
     window.location.href = '/Data/pages/datasets/index.php';
   });
   els.resetBtn?.addEventListener('click', resetPage);
-  els.saveAndContinueBtn?.addEventListener('click', () => saveDataset(true));
 
   resetPage();
 });

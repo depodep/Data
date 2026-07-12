@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
     status: urlParams.get('status') === 'archived' ? 'archived' : '',
     totalPages: 1,
     datasetsById: new Map(),
+    userRole: '',
   };
 
   const els = {
@@ -66,9 +67,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
             <div class="mt-auto d-grid gap-2">
               <button type="button" class="btn btn-primary btn-sm view-dataset-btn" data-dataset-id="${escapeHtml(dataset.dataset_id)}">View Data Sets</button>
+              ${dataset.processing_status === 'uploaded' ? `<button type="button" class="btn btn-success btn-sm import-dataset-btn" data-dataset-id="${escapeHtml(dataset.dataset_id)}">Import Records</button>` : ''}
+              ${dataset.processing_status === 'validated' && state.userRole === 'administrator' ? `<button type="button" class="btn btn-warning btn-sm unimport-dataset-btn" data-dataset-id="${escapeHtml(dataset.dataset_id)}">Un-import Records</button>` : ''}
               <div class="d-flex gap-2">
                 <button type="button" class="btn btn-outline-secondary btn-sm flex-fill edit-dataset-btn" data-dataset-id="${escapeHtml(dataset.dataset_id)}">Edit</button>
-                <button type="button" class="btn btn-outline-danger btn-sm flex-fill remove-dataset-btn" data-dataset-id="${escapeHtml(dataset.dataset_id)}">Remove</button>
+                ${state.userRole === 'administrator' ? `<button type="button" class="btn btn-outline-danger btn-sm flex-fill remove-dataset-btn" data-dataset-id="${escapeHtml(dataset.dataset_id)}">Remove</button>` : ''}
               </div>
             </div>
           </div>
@@ -199,6 +202,70 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       });
     });
+
+    els.grid.querySelectorAll('.import-dataset-btn').forEach((button) => {
+      button.addEventListener('click', async (event) => {
+        event.stopPropagation();
+        const datasetId = Number(button.dataset.datasetId);
+        if (!confirm('Are you sure you want to import this dataset? This will save the rows to the database so students can see their data.')) return;
+        
+        const originalText = button.innerHTML;
+        button.disabled = true;
+        button.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
+        
+        try {
+          const formData = new FormData();
+          formData.append('dataset_id', String(datasetId));
+          formData.append('csrf_token', document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '');
+          const response = await fetch('/Data/api/datasets/import.php', { method: 'POST', body: formData });
+          const json = await response.json();
+          if (json.success) {
+            alert('Dataset imported successfully.');
+            loadDatasets();
+          } else {
+            alert(json.message || 'Error importing dataset');
+            button.disabled = false;
+            button.innerHTML = originalText;
+          }
+        } catch (e) {
+          alert('Error importing dataset');
+          button.disabled = false;
+          button.innerHTML = originalText;
+        }
+      });
+    });
+
+    els.grid.querySelectorAll('.unimport-dataset-btn').forEach((button) => {
+      button.addEventListener('click', async (event) => {
+        event.stopPropagation();
+        const datasetId = Number(button.dataset.datasetId);
+        if (!confirm('Are you sure you want to un-import this dataset? This will remove all its records from the database (students will no longer see them), but the uploaded file will be kept.')) return;
+        
+        const originalText = button.innerHTML;
+        button.disabled = true;
+        button.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
+        
+        try {
+          const formData = new FormData();
+          formData.append('dataset_id', String(datasetId));
+          formData.append('csrf_token', document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '');
+          const response = await fetch('/Data/api/datasets/unimport.php', { method: 'POST', body: formData });
+          const json = await response.json();
+          if (json.success) {
+            alert('Records removed from database successfully.');
+            loadDatasets();
+          } else {
+            alert(json.message || 'Error removing records');
+            button.disabled = false;
+            button.innerHTML = originalText;
+          }
+        } catch (e) {
+          alert('Error removing records');
+          button.disabled = false;
+          button.innerHTML = originalText;
+        }
+      });
+    });
   };
 
   const loadDatasets = async () => {
@@ -226,6 +293,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       const rows = Array.isArray(json.data) ? json.data : [];
+      state.userRole = json.meta?.user_role || '';
       state.datasetsById = new Map(rows.map((dataset) => [Number(dataset.dataset_id), dataset]));
       if (!rows.length) {
         els.grid.innerHTML = '<div class="col-12"><div class="p-4 text-center text-muted">No datasets found for this filter.</div></div>';

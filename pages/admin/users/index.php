@@ -336,11 +336,11 @@ if ($tab === 'activity' || $tab === 'audit') {
                                     <label class="form-label" for="phone">Phone</label>
                                     <input type="text" class="form-control" name="phone" id="phone">
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-md-6" id="student_container">
                                     <label class="form-label" for="student_id">Student ID</label>
                                     <input type="text" class="form-control" name="student_id" id="student_id">
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-md-6" id="employee_container">
                                     <label class="form-label" for="employee_id">Employee ID</label>
                                     <input type="text" class="form-control" name="employee_id" id="employee_id">
                                 </div>

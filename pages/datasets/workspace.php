@@ -45,7 +45,7 @@ $canImport = user_has_role(['administrator','teacher']) && ($dataset['processing
     <div class="d-flex justify-content-between align-items-start mb-3">
       <div>
         <h1 class="h4 mb-1"><?php echo e($dataset['dataset_name']); ?></h1>
-        <p class="text-muted mb-0">Uploaded by <?php echo e($dataset['owner_name'] ?? 'Unknown'); ?> • Status: <?php echo e($dataset['processing_status']); ?> • Records: <?php echo e((int)$dataset['record_count']); ?></p>
+        <p class="text-muted mb-0">Uploaded by <?php echo e($dataset['owner_name'] ?? 'Unknown'); ?> • Status: <?php echo e($dataset['processing_status']); ?> • Records: <?php echo e((string)$dataset['record_count']); ?></p>
       </div>
       <div class="d-flex gap-2">
         <?php if ($canImport): ?>

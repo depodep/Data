@@ -58,7 +58,7 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
 
             <div class="row g-2 mb-3 small">
-              <div class="col-6"><div class="workspace-mini-kpi p-3 h-100"><div class="text-muted small">Student ID</div><div class="fw-semibold">${escapeHtml(record.student_id || '-')}</div></div></div>
+              <div class="col-6"><div class="workspace-mini-kpi p-3 h-100"><div class="text-muted small">Student ID / Name</div><div class="fw-semibold">${escapeHtml(record.student_id || '-')} <span class="text-muted fw-normal">|</span> ${escapeHtml(record.student_name || '-')}</div></div></div>
               <div class="col-6"><div class="workspace-mini-kpi p-3 h-100"><div class="text-muted small">Subject</div><div class="fw-semibold">${escapeHtml(record.subject || '-')}</div></div></div>
               <div class="col-6"><div class="workspace-mini-kpi p-3 h-100"><div class="text-muted small">Course</div><div class="fw-semibold">${escapeHtml(record.course || '-')}</div></div></div>
               <div class="col-6"><div class="workspace-mini-kpi p-3 h-100"><div class="text-muted small">Section</div><div class="fw-semibold">${escapeHtml(record.section || '-')}</div></div></div>
