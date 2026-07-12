@@ -19,35 +19,20 @@ Never generate future modules unless requested.
 Always follow this order.
 
 1. Project Structure
-
 2. Database Design
-
 3. Authentication
-
 4. User Management
-
 5. Dashboard
-
 6. Dataset Library
-
 7. Dataset Workspace
-
 8. Data Preparation
-
 9. Statistical Analysis
-
 10. Visualization
-
 11. Machine Learning
-
 12. Reports
-
 13. Student Module
-
 14. Teacher Module
-
 15. Admin Module
-
 16. Testing
 
 Do not jump ahead.
@@ -305,7 +290,7 @@ Dataset Library
 - Search Dataset
 - Filter Dataset
 - Download Template
-- Upload Dataset
+- Upload Datasetm
 - Dataset Cards
 
 Each dataset opens a Dataset Workspace.
@@ -562,3 +547,6 @@ Whenever generating code:
 - Explain dependencies before generating code.
 - Generate only the requested phase.
 - Wait for approval before continuing to the next phase.
+
+
+

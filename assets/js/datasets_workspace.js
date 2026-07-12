@@ -53,6 +53,8 @@ document.addEventListener('DOMContentLoaded', () => {
     runVisualBtn: document.getElementById('runVisualBtn'),
     runPredictBtn: document.getElementById('runPredictBtn'),
     resetPredictBtn: document.getElementById('resetPredictBtn'),
+    predictTargetSelect: document.getElementById('predictTargetSelect'),
+    predictFeatureSelect: document.getElementById('predictFeatureSelect'),
     workspaceAnalyzeBtn: document.getElementById('workspaceAnalyzeBtn'),
     workspaceVisualizeBtn: document.getElementById('workspaceVisualizeBtn'),
     workspaceMachineLearningBtn: document.getElementById('workspaceMachineLearningBtn'),
@@ -77,6 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
     analysisTrendCards: document.getElementById('analysisTrendCards'),
     analysisInsightCards: document.getElementById('analysisInsightCards'),
     predictionMatrix: document.getElementById('predictionMatrix'),
+    predictionInsight: document.getElementById('predictionInsight'),
     predictionAccuracy: document.getElementById('predictionAccuracy'),
     predictionR2: document.getElementById('predictionR2'),
     predictionMae: document.getElementById('predictionMae'),
@@ -502,7 +505,8 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   const inferColumnType = (column) => {
-    const sampleValues = state.preview.map((row) => row[column]).filter((value) => value !== null && value !== undefined && value !== '');
+    if (!state.preview || !state.preview.length) return 'Categorical';
+    const sampleValues = state.preview.map((row) => row ? row[column] : null).filter((value) => value !== null && value !== undefined && value !== '');
     const numericValues = sampleValues.filter((value) => toNumber(value) !== null);
     return numericValues.length >= Math.max(1, sampleValues.length * 0.6) ? 'Numeric' : 'Categorical';
   };
@@ -594,6 +598,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const renderPreview = () => {
     if (!els.previewArea) return;
+    
+    let activeId = null;
+    let selectionStart = 0;
+    let selectionEnd = 0;
+    if (document.activeElement && document.activeElement.id) {
+      activeId = document.activeElement.id;
+      if (activeId === 'workspacePreviewSearch' && document.activeElement instanceof HTMLInputElement) {
+        selectionStart = document.activeElement.selectionStart || 0;
+        selectionEnd = document.activeElement.selectionEnd || 0;
+      }
+    }
+
     const rows = getRows();
     const total = rows.length;
     const pageCount = Math.max(1, Math.ceil(total / state.previewPerPage));
@@ -688,6 +704,16 @@ document.addEventListener('DOMContentLoaded', () => {
         renderPreview();
       });
     });
+
+    if (activeId) {
+      const restored = document.getElementById(activeId);
+      if (restored) {
+        restored.focus();
+        if (activeId === 'workspacePreviewSearch' && restored instanceof HTMLInputElement) {
+          try { restored.setSelectionRange(selectionStart, selectionEnd); } catch (e) {}
+        }
+      }
+    }
   };
 
   const renderAnalysis = () => {
@@ -890,7 +916,6 @@ document.addEventListener('DOMContentLoaded', () => {
               <canvas id="${chartDef.canvasId}" height="220"></canvas>
             </div>
             <div class="d-flex flex-wrap gap-2">
-              <button type="button" class="btn btn-sm btn-outline-primary" data-chart-download="${chartDef.canvasId}">Download PNG</button>
               <button type="button" class="btn btn-sm btn-outline-secondary" data-chart-expand="${cardId}">Expand</button>
             </div>
           </div>
@@ -1060,6 +1085,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const header = lines.shift()?.split(',') || [];
           const actualColumn = header.find((column) => column.startsWith('actual_'));
           const predictedColumn = header.find((column) => column.startsWith('pred_'));
+          const featureColumnName = header.find((column) => column !== actualColumn && column !== predictedColumn);
           if (actualColumn && predictedColumn) {
             actualVsPred = lines.map((line) => {
               const values = line.split(',');
@@ -1068,6 +1094,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return accumulator;
               }, {});
               return {
+                feature: featureColumnName ? Number(record[featureColumnName]) : 0,
                 actual: Number(record[actualColumn]),
                 predicted: Number(record[predictedColumn]),
               };
@@ -1089,9 +1116,31 @@ document.addEventListener('DOMContentLoaded', () => {
     if (els.predictionStatus) els.predictionStatus.textContent = 'Completed';
     if (els.predictOutput) els.predictOutput.textContent = JSON.stringify(result, null, 2);
 
+    if (els.predictionInsight && result.slope !== undefined && result.intercept !== undefined) {
+      const slope = Number(result.slope);
+      const intercept = Number(result.intercept);
+      const config = getPredictionConfig();
+      const targetName = config.targetColumn || 'the target';
+      const featureName = config.featureColumns[0] || 'the feature';
+      
+      els.predictionInsight.innerHTML = `
+        <div class="fw-semibold mb-1"><i class="bi bi-lightbulb text-info me-2"></i>Prediction Insight</div>
+        <p class="mb-0 text-dark small">
+          Based on the trained linear regression model: As <strong>${featureName}</strong> increases by 1, <strong>${targetName}</strong> is predicted to ${slope >= 0 ? 'increase' : 'decrease'} by <strong>${Math.abs(slope).toFixed(2)}</strong>. The baseline (when ${featureName} is 0) is <strong>${intercept.toFixed(2)}</strong>.
+        </p>
+      `;
+      els.predictionInsight.classList.remove('d-none');
+    }
+
     if (els.predictionMatrix) {
       if (actualVsPred.length) {
-        const data = actualVsPred.slice(0, 50);
+        const config = getPredictionConfig();
+        const featureName = config.featureColumns[0] || 'Feature';
+        const targetName = config.targetColumn || 'Target';
+
+        actualVsPred.sort((a, b) => a.feature - b.feature);
+        const data = actualVsPred.slice(0, 100);
+        
         if (state.chartInstances.length) {
           state.chartInstances.forEach((chart) => chart.destroy());
           state.chartInstances = [];
@@ -1101,20 +1150,33 @@ document.addEventListener('DOMContentLoaded', () => {
         els.predictionMatrix.innerHTML = '';
         els.predictionMatrix.appendChild(canvas);
         const chart = new window.Chart(canvas, {
-          type: 'scatter',
           data: {
-            datasets: [{
-              label: 'Actual vs Predicted',
-              data,
-              backgroundColor: 'rgba(37, 99, 235, 0.75)',
-            }],
+            datasets: [
+              {
+                type: 'scatter',
+                label: 'Actual Values',
+                data: data.map(p => ({ x: p.feature, y: p.actual })),
+                backgroundColor: 'rgba(37, 99, 235, 0.75)',
+                pointRadius: 4,
+              },
+              {
+                type: 'line',
+                label: 'Regression Line',
+                data: data.map(p => ({ x: p.feature, y: p.predicted })),
+                borderColor: '#ef4444',
+                borderWidth: 2,
+                pointRadius: 0,
+                fill: false,
+                tension: 0
+              }
+            ],
           },
           options: {
             responsive: true,
             maintainAspectRatio: false,
             scales: {
-              x: { title: { display: true, text: 'Actual' } },
-              y: { title: { display: true, text: 'Predicted' } },
+              x: { type: 'linear', title: { display: true, text: featureName } },
+              y: { type: 'linear', title: { display: true, text: targetName } },
             },
           },
         });
@@ -1165,18 +1227,98 @@ document.addEventListener('DOMContentLoaded', () => {
     buildColumnInfo();
     updateSummaryCards();
     renderPreview();
-    renderCharts();
-    updatePredictionSelectors();
+    
+    try {
+      renderCharts();
+    } catch (e) {
+      console.error("Error rendering charts:", e);
+    }
+    
+    try {
+      populatePredictionSelects();
+    } catch (e) {
+      console.error("Error populating prediction selects:", e);
+    }
+    
     updateHeader();
   };
 
   function getPredictionConfig() {
-    const attendanceColumn = state.previewColumns.find((column) => normalizeFieldName(column) === normalizeFieldName('Attendance')) || 'Attendance';
-    const targetColumn = state.previewColumns.find((column) => normalizeFieldName(column) === normalizeFieldName('Final Score')) || 'Final Score';
+    const targetColumn = els.predictTargetSelect?.value || 'Final Score';
+    const featureColumn = els.predictFeatureSelect?.value || 'Attendance';
     return {
       targetColumn,
-      featureColumns: [attendanceColumn],
+      featureColumns: [featureColumn],
     };
+  }
+
+  function populatePredictionSelects() {
+    if (!els.predictTargetSelect || !els.predictFeatureSelect) return;
+    
+    // Clear current options
+    els.predictTargetSelect.innerHTML = '';
+    els.predictFeatureSelect.innerHTML = '';
+    
+    // Get numeric columns
+    let cols = [];
+    try {
+      cols = (state.previewColumns || []).filter((column) => inferColumnType(column) === 'Numeric');
+    } catch (e) {
+      console.error("Error filtering numeric columns:", e);
+    }
+    if (!cols.length) {
+      cols = state.previewColumns || []; // fallback to all columns
+    }
+    
+    // Filter out Student ID and Year Level
+    cols = cols.filter((col) => {
+      const normalized = normalizeFieldName(col);
+      return normalized !== normalizeFieldName('Student ID') && normalized !== normalizeFieldName('Year Level');
+    });
+
+    if (!cols.length) return;
+    
+    // Populate Target column select
+    cols.forEach((col) => {
+      const option = document.createElement('option');
+      option.value = col;
+      option.textContent = col;
+      els.predictTargetSelect.appendChild(option);
+    });
+    
+    // Populate Feature column select
+    cols.forEach((col) => {
+      const option = document.createElement('option');
+      option.value = col;
+      option.textContent = col;
+      els.predictFeatureSelect.appendChild(option);
+    });
+    
+    // Set default selections
+    try {
+      const defaultTarget = cols.find((col) => normalizeFieldName(col) === normalizeFieldName('Final Score')) 
+                         || cols.find((col) => normalizeFieldName(col).includes('final'))
+                         || cols[0];
+      if (defaultTarget) {
+        els.predictTargetSelect.value = defaultTarget;
+      }
+      
+      const defaultFeature = cols.find((col) => normalizeFieldName(col) === normalizeFieldName('Attendance') && col !== defaultTarget)
+                          || cols.find((col) => normalizeFieldName(col).includes('attendance') && col !== defaultTarget)
+                          || cols.find((col) => col !== defaultTarget)
+                          || cols[0];
+      if (defaultFeature) {
+        els.predictFeatureSelect.value = defaultFeature;
+      }
+    } catch (e) {
+      console.error("Error setting default selections:", e);
+    }
+    
+    try {
+      updatePredictionSelectors();
+    } catch (e) {
+      console.error("Error updating prediction selectors:", e);
+    }
   }
 
   function updatePredictionSelectors() {
@@ -1303,7 +1445,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!state.datasetId) return;
     const config = getPredictionConfig();
     if (!config.targetColumn || !config.featureColumns.length) {
-      showAlert('Attendance and Final Score columns are required for prediction.', 'warning');
+      showAlert('Target and Feature columns are required for prediction.', 'warning');
+      return;
+    }
+    if (config.targetColumn === config.featureColumns[0]) {
+      showAlert('Target and Feature columns cannot be the same. Please select different columns.', 'warning');
       return;
     }
     if (els.runPredictBtn) els.runPredictBtn.disabled = true;
@@ -1336,6 +1482,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (els.predictionRmse) els.predictionRmse.textContent = '-';
     if (els.predictionMatrix) els.predictionMatrix.innerHTML = '<div class="workspace-chart-placeholder text-muted small">Confusion matrix will appear for classification workflows.</div>';
     if (els.predictionStatus) els.predictionStatus.textContent = 'Not run';
+    if (els.predictionInsight) {
+      els.predictionInsight.innerHTML = '';
+      els.predictionInsight.classList.add('d-none');
+    }
   };
 
   const openTab = (selector) => {
@@ -1418,6 +1568,8 @@ document.addEventListener('DOMContentLoaded', () => {
     els.runVisualBtn?.addEventListener('click', runVisualizationApi);
     els.runPredictBtn?.addEventListener('click', runPrediction);
     els.resetPredictBtn?.addEventListener('click', resetPrediction);
+    els.predictTargetSelect?.addEventListener('change', updatePredictionSelectors);
+    els.predictFeatureSelect?.addEventListener('change', updatePredictionSelectors);
     els.workspaceAnalyzeBtn?.addEventListener('click', () => openTab('#tab-analysis'));
     els.workspaceVisualizeBtn?.addEventListener('click', () => openTab('#tab-visual'));
     els.workspaceMachineLearningBtn?.addEventListener('click', () => openTab('#tab-ml'));

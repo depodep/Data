@@ -113,16 +113,27 @@ $canImport = user_has_role(['administrator','teacher']) && ($dataset['processing
 
           <div class="tab-pane fade" id="pane-predict" role="tabpanel">
             <h5 class="card-title">Prediction</h5>
-            <p class="text-muted">Run a simple prediction model. Provide the numeric target column name.</p>
-            <div class="row g-2 align-items-center mb-3">
-              <div class="col-auto">
-                <input id="predictTarget" class="form-control" placeholder="Target column name">
+            <p class="text-muted">Predict Final Score from Attendance using Linear Regression.</p>
+            <div class="row g-3 mb-3">
+              <div class="col-12">
+                <div class="alert alert-light border shadow-sm small mb-0">
+                  <strong>Target</strong> is what you want to predict (e.g., Final Score). <strong>Feature</strong> is the input you use to make the prediction (e.g., Attendance).
+                </div>
               </div>
               <div class="col-auto">
-                <button id="runPredictBtn" class="btn btn-outline-danger">Run Prediction</button>
+                <label for="predictTargetSelect" class="text-muted small fw-semibold">Target Column</label>
+                <select id="predictTargetSelect" class="form-select form-select-sm mt-1"></select>
+              </div>
+              <div class="col-auto">
+                <label for="predictFeatureSelect" class="text-muted small fw-semibold">Feature Column</label>
+                <select id="predictFeatureSelect" class="form-select form-select-sm mt-1"></select>
+              </div>
+              <div class="col-auto d-flex align-items-end">
+                <button id="runPredictBtn" class="btn btn-primary">Run Prediction</button>
               </div>
             </div>
-            <pre id="predictOutput" class="p-3 bg-light small">No predictions yet.</pre>
+            <div id="predictionInsight" class="alert alert-info shadow-sm d-none mt-3" role="alert"></div>
+            <div id="predictOutput" class="d-none"></div>
           </div>
         </div>
       </div>

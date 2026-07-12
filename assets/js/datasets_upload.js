@@ -20,8 +20,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (!els.uploadModal) return;
 
-  const bootstrapModal = window.bootstrap?.Modal;
-  const modalInstance = bootstrapModal ? bootstrapModal.getOrCreateInstance(els.uploadModal) : null;
+  let modalInstance = null;
+  try {
+    modalInstance = bootstrap.Modal.getOrCreateInstance(els.uploadModal);
+  } catch (e) {
+    console.error('Bootstrap Modal init failed:', e);
+    return;
+  }
 
   const showAlert = (message, type = 'info') => {
     if (!els.uploadAlert) return;

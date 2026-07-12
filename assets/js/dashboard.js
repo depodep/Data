@@ -21,7 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
     recentDatasets.innerHTML = data.recent_datasets.map(ds => `
       <div class="mb-2">
         <strong>${escapeHtml(ds.dataset_name)}</strong>
-        <div class="small text-muted">by ${escapeHtml(ds.owner_name ?? 'Unknown')} • ${ds.record_count} rows • ${ds.shared_scope}</div>
+        <div class="small text-muted">by ${escapeHtml(ds.owner_name ?? 'Unknown')} • ${ds.record_count} rows</div>
       </div>
     `).join('');
 
@@ -87,7 +87,6 @@ document.addEventListener('DOMContentLoaded', () => {
           </td>
           <td>${escapeHtml(dataset.owner_name)}</td>
           <td><span class="badge text-bg-${badgeForStatus(dataset.processing_status)}">${escapeHtml(dataset.processing_status)}</span></td>
-          <td>${escapeHtml(dataset.shared_scope)}</td>
           <td>${escapeHtml(dataset.record_count)}</td>
         </tr>
       `).join('');

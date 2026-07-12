@@ -74,8 +74,8 @@ try {
             if (!$dataset) throw new RuntimeException('Dataset not found');
 
             $file = $dataset['file_path'] ?? null;
-            $abs = realpath(__DIR__ . '/../' . ltrim($file, '/\\'));
-            if ($abs === false || !is_file($abs)) throw new RuntimeException('File not readable');
+            $abs = dataset_absolute_path((string) $file);
+            if ($abs === null || !is_file($abs)) throw new RuntimeException('File not readable');
 
             $python = 'python';
             $script = __DIR__ . '/../python/analyze_dataset.py';
@@ -92,8 +92,8 @@ try {
             if (!$dataset) throw new RuntimeException('Dataset not found');
 
             $file = $dataset['file_path'] ?? null;
-            $abs = realpath(__DIR__ . '/../' . ltrim($file, '/\\'));
-            if ($abs === false || !is_file($abs)) throw new RuntimeException('File not readable');
+            $abs = dataset_absolute_path((string) $file);
+            if ($abs === null || !is_file($abs)) throw new RuntimeException('File not readable');
 
             $chartsDir = __DIR__ . '/../charts';
             $outDir = $chartsDir . DIRECTORY_SEPARATOR . 'dataset_' . $datasetId;
@@ -117,8 +117,8 @@ try {
             if (!$dataset) throw new RuntimeException('Dataset not found');
 
             $file = $dataset['file_path'] ?? null;
-            $abs = realpath(__DIR__ . '/../' . ltrim($file, '/\\'));
-            if ($abs === false || !is_file($abs)) throw new RuntimeException('File not readable');
+            $abs = dataset_absolute_path((string) $file);
+            if ($abs === null || !is_file($abs)) throw new RuntimeException('File not readable');
 
             $outDir = __DIR__ . '/../models/predictions';
             if (!is_dir($outDir)) mkdir($outDir, 0755, true);

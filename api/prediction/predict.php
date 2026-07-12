@@ -10,10 +10,10 @@ $user = current_user();
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') json_response(['success' => false, 'message' => 'Method not allowed'], 405);
 
 $datasetId = isset($_POST['dataset_id']) ? (int) $_POST['dataset_id'] : 0;
-$target = 'Final Score';
-$modelType = 'linear_regression';
-$featureColumns = ['Attendance'];
-$sync = isset($_POST['sync']) && in_array((string)$_POST['sync'], ['1','true'], true);
+$target = isset($_POST['target_column']) ? trim((string)$_POST['target_column']) : 'Final Score';
+$modelType = isset($_POST['model_type']) ? trim((string)$_POST['model_type']) : 'linear_regression';
+$featureColumns = isset($_POST['feature_columns']) && is_array($_POST['feature_columns']) ? $_POST['feature_columns'] : ['Attendance'];
+$sync = !isset($_POST['sync']) || in_array((string)$_POST['sync'], ['1','true'], true);
 
 if ($datasetId <= 0 || $target === '') json_response(['success' => false, 'message' => 'Missing dataset_id or target_column'], 422);
 
@@ -32,8 +32,8 @@ if ($sync) {
     $file = $dataset['file_path'] ?? null;
     if (empty($file)) json_response(['success' => false, 'message' => 'Dataset file missing'], 500);
 
-    $abs = realpath(__DIR__ . '/../../' . ltrim($file, '/\\'));
-    if ($abs === false || !is_file($abs)) json_response(['success' => false, 'message' => 'File not readable'], 500);
+    $abs = dataset_absolute_path((string) $file);
+    if ($abs === null || !is_file($abs)) json_response(['success' => false, 'message' => 'File not readable'], 500);
 
     $outDir = __DIR__ . '/../../models/predictions';
     if (!is_dir($outDir)) mkdir($outDir, 0755, true);
@@ -52,11 +52,16 @@ if ($sync) {
         json_response(['success' => false, 'message' => $result['message'] ?? 'Prediction failed', 'details' => $result]);
     }
 
+    if (isset($result['predictions_path'])) {
+        $result['predictions_path'] = preg_replace('#^.+/htdocs/#', '/', str_replace('\\', '/', $result['predictions_path']));
+    }
+
     // Store prediction result (sync)
-    $ins = db()->prepare('INSERT INTO prediction_results (dataset_id, run_by_user_id, model_type, target_column, feature_columns_json, training_rows, testing_rows, accuracy, metrics_json, predictions_json, status, started_at, completed_at, created_at, updated_at) VALUES (:dataset_id, :run_by_user_id, :model_type, :target_column, :feature_columns_json, :training_rows, :testing_rows, :accuracy, :metrics_json, :predictions_json, :status, NOW(), NOW(), NOW(), NOW())');
+    $ins = db()->prepare('INSERT INTO prediction_results (dataset_id, run_by_user_id, model_type, target_column, feature_columns_json, training_rows, testing_rows, accuracy, metrics_json, predictions_json, predictions_path, status, started_at, completed_at, created_at, updated_at) VALUES (:dataset_id, :run_by_user_id, :model_type, :target_column, :feature_columns_json, :training_rows, :testing_rows, :accuracy, :metrics_json, :predictions_json, :predictions_path, :status, NOW(), NOW(), NOW(), NOW())');
 
     $metrics = ['mse' => $result['mse'] ?? null, 'r2' => $result['r2'] ?? null];
-    $predJson = json_encode(['predictions_path' => $result['predictions_path'] ?? $outPath]);
+    $predPath = $result['predictions_path'] ?? $outPath;
+    $predJson = json_encode(['predictions_path' => $predPath]);
 
     $ins->execute([
         'dataset_id' => $datasetId,
@@ -69,8 +74,35 @@ if ($sync) {
         'accuracy' => $result['r2'] ?? null,
         'metrics_json' => json_encode($metrics),
         'predictions_json' => $predJson,
+        'predictions_path' => $predPath,
         'status' => 'completed'
     ]);
+
+    $predictionResultId = (int) db()->lastInsertId();
+
+    // Create report entry
+    try {
+        $fileName = basename($predPath);
+        $fileSize = is_file(__DIR__ . '/../../' . ltrim($predPath, '/\\')) ? filesize(__DIR__ . '/../../' . ltrim($predPath, '/\\')) : 0;
+        
+        $rins = db()->prepare('INSERT INTO reports (dataset_id, prediction_result_id, generated_by_user_id, report_type, report_title, report_format, file_name, file_path, file_size, status, generated_at, created_at, updated_at) VALUES (:dataset_id, :prediction_result_id, :generated_by_user_id, :report_type, :report_title, :report_format, :file_name, :file_path, :file_size, :status, NOW(), NOW(), NOW())');
+        $rins->execute([
+            'dataset_id' => $datasetId,
+            'prediction_result_id' => $predictionResultId,
+            'generated_by_user_id' => (int)$user['user_id'],
+            'report_type' => 'prediction',
+            'report_title' => 'Predictions for ' . ($dataset['dataset_name'] ?? 'dataset'),
+            'report_format' => 'csv',
+            'file_name' => $fileName,
+            'file_path' => $predPath,
+            'file_size' => $fileSize,
+            'status' => 'generated'
+        ]);
+        
+        $reportId = (int) db()->lastInsertId();
+    } catch (Throwable $e) {
+        $reportId = null;
+    }
 
     log_activity((int)$user['user_id'], 'predict', 'prediction', 'Ran prediction on dataset (sync)', $result, $datasetId);
 

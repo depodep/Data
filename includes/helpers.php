@@ -97,25 +97,13 @@ function can_current_user_view_dataset(array $dataset): bool
 {
     $user = current_user();
 
-    // If dataset is public or shared, allow
-    if (!empty($dataset['shared_scope']) && in_array($dataset['shared_scope'], ['public', 'shared'], true)) {
-        return true;
-    }
-
-    // If not authenticated, deny
     if ($user === null) {
         return false;
     }
 
-    // Admins can view anything
     if (!empty($user['role_slug']) && $user['role_slug'] === 'administrator') {
         return true;
     }
 
-    // Owners can view their datasets
-    if (isset($dataset['owner_user_id']) && (int) $dataset['owner_user_id'] === (int) $user['user_id']) {
-        return true;
-    }
-
-    return false;
+    return isset($dataset['owner_user_id']) && (int) $dataset['owner_user_id'] === (int) $user['user_id'];
 }

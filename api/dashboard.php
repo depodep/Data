@@ -26,7 +26,7 @@ $stmt->execute();
 $stats['total_records'] = (int) $stmt->fetchColumn();
 
 // Recent datasets
-$stmt = db()->prepare('SELECT d.dataset_id, d.dataset_name, d.owner_user_id, u.full_name AS owner_name, d.record_count, d.uploaded_at, d.shared_scope FROM datasets d LEFT JOIN users u ON u.user_id = d.owner_user_id ORDER BY d.uploaded_at DESC LIMIT 6');
+$stmt = db()->prepare('SELECT d.dataset_id, d.dataset_name, d.owner_user_id, u.full_name AS owner_name, d.record_count, d.uploaded_at FROM datasets d LEFT JOIN users u ON u.user_id = d.owner_user_id ORDER BY d.uploaded_at DESC LIMIT 6');
 $stmt->execute();
 $recentDatasets = $stmt->fetchAll();
 

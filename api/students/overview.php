@@ -19,7 +19,6 @@ $sql = '
         d.dataset_description,
         d.processing_status,
         d.uploaded_at,
-        d.shared_scope,
         d.owner_user_id,
         owner.full_name AS owner_name,
         dr.row_number,
@@ -69,7 +68,6 @@ foreach ($rows as $row) {
         'dataset_description' => $row['dataset_description'],
         'processing_status' => $row['processing_status'],
         'uploaded_at' => $row['uploaded_at'],
-        'shared_scope' => $row['shared_scope'],
         'owner_name' => $row['owner_name'],
         'record' => [
             'row_number' => (int) $row['row_number'],

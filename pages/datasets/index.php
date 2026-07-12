@@ -17,8 +17,6 @@ if (isset($_GET['upload'])) {
     $activeSubPage = 'upload';
 } elseif (isset($_GET['filter']) && $_GET['filter'] === 'my') {
     $activeSubPage = 'my_datasets';
-} elseif (isset($_GET['scope']) && $_GET['scope'] === 'shared') {
-    $activeSubPage = 'shared_datasets';
 } elseif (isset($_GET['status']) && $_GET['status'] === 'archived') {
     $activeSubPage = 'archived_datasets';
 } elseif (isset($_GET['all']) || $user['role_slug'] === 'administrator') {
@@ -57,9 +55,9 @@ if (isset($_GET['upload'])) {
         <p class="text-muted mb-0">Browse, search, download template, and upload datasets.</p>
       </div>
       <div class="d-flex gap-2">
-        <a class="btn btn-outline-secondary" href="/Data/templates/dataset_template.csv" download>Download Template</a>
+        <a class="btn btn-outline-secondary" href="/Data/api/datasets/template.php" download="dataset_template.csv">Download Template</a>
         <?php if (user_has_role(['administrator','teacher'])): ?>
-          <button class="btn btn-primary" id="openUpload">Upload Dataset</button>
+          <a class="btn btn-primary" href="/Data/pages/datasets/upload.php">Upload Dataset</a>
         <?php endif; ?>
       </div>
     </div>
@@ -67,14 +65,6 @@ if (isset($_GET['upload'])) {
     <div class="row g-3 mb-3">
       <div class="col-md-6">
         <input type="search" id="searchDatasets" class="form-control" placeholder="Search datasets by name or filename">
-      </div>
-      <div class="col-md-3">
-        <select id="filterScope" class="form-select">
-          <option value="">All scopes</option>
-          <option value="public">Public</option>
-          <option value="shared">Shared</option>
-          <option value="private">Private</option>
-        </select>
       </div>
       <div class="col-md-3 text-end">
         <select id="perPage" class="form-select">
@@ -91,6 +81,8 @@ if (isset($_GET['upload'])) {
       <ul id="datasetsPagination" class="pagination"></ul>
     </nav>
   </main>
+    </div>
+  </div>
 
   <!-- Dataset Analysis Workspace Modal -->
   <div class="modal fade" id="vizOptionsModal" tabindex="-1" aria-hidden="true">
@@ -116,8 +108,7 @@ if (isset($_GET['upload'])) {
         <div class="modal-body pt-0">
           <div id="workspaceAlert" class="alert d-none shadow-sm mb-4" role="alert"></div>
 
-          <div class="row g-4">
-            <div class="col-12 col-xl-9">
+          <div>
               <div class="card border-0 shadow-sm workspace-section-card mb-4">
                 <div class="card-body p-0">
                   <ul class="nav nav-tabs px-3 pt-3 sticky-top bg-body z-3 shadow-sm" id="workspaceTabs" role="tablist">
@@ -125,7 +116,6 @@ if (isset($_GET['upload'])) {
                     <li class="nav-item" role="presentation"><button class="nav-link" id="tab-analysis" data-bs-toggle="tab" data-bs-target="#pane-analysis" type="button" role="tab">Analysis</button></li>
                     <li class="nav-item" role="presentation"><button class="nav-link" id="tab-visual" data-bs-toggle="tab" data-bs-target="#pane-visual" type="button" role="tab">Visualization</button></li>
                     <li class="nav-item" role="presentation"><button class="nav-link" id="tab-ml" data-bs-toggle="tab" data-bs-target="#pane-ml" type="button" role="tab">Machine Learning</button></li>
-                    <li class="nav-item" role="presentation"><button class="nav-link" id="tab-export" data-bs-toggle="tab" data-bs-target="#pane-export" type="button" role="tab">Export</button></li>
                   </ul>
 
                   <div class="tab-content p-3 p-lg-4">
@@ -244,12 +234,9 @@ if (isset($_GET['upload'])) {
                     <div class="tab-pane fade" id="pane-visual" role="tabpanel">
                       <div class="card border-0 shadow-sm workspace-section-card mb-4">
                         <div class="card-body">
-                          <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-                            <div>
-                              <h6 class="mb-1">Visualizations</h6>
-                              <p class="text-muted small mb-0">Responsive chart gallery driven by the current dataset sample.</p>
-                            </div>
-                            <button id="runVisualBtn" class="btn btn-outline-primary" type="button">Generate Charts</button>
+                          <div class="mb-3">
+                            <h6 class="mb-1">Visualizations</h6>
+                            <p class="text-muted small mb-0">Responsive chart gallery driven by the current dataset sample.</p>
                           </div>
                           <div class="row g-3" id="visualOutput"></div>
                         </div>
@@ -262,18 +249,22 @@ if (isset($_GET['upload'])) {
                           <div class="card border-0 shadow-sm workspace-section-card h-100">
                             <div class="card-body">
                               <h6 class="mb-2">Prediction</h6>
-                              <p class="text-muted small mb-3" id="predictionSummary">Predict Final Score from Attendance using Linear Regression.</p>
                               <div class="row g-3 mb-4">
-                                <div class="col-6">
-                                  <div class="workspace-mini-kpi p-3 h-100">
-                                    <div class="text-muted small">Target</div>
-                                    <div class="h5 mb-0">Final Score</div>
+                                <div class="col-12">
+                                  <div class="alert alert-light border shadow-sm small mb-0">
+                                    <strong>Target</strong> is what you want to predict (e.g., Final Score). <strong>Feature</strong> is the input you use to make the prediction (e.g., Attendance).
                                   </div>
                                 </div>
                                 <div class="col-6">
                                   <div class="workspace-mini-kpi p-3 h-100">
-                                    <div class="text-muted small">Feature</div>
-                                    <div class="h5 mb-0">Attendance</div>
+                                    <label for="predictTargetSelect" class="text-muted small fw-semibold">Target Column</label>
+                                    <select id="predictTargetSelect" class="form-select form-select-sm mt-1"></select>
+                                  </div>
+                                </div>
+                                <div class="col-6">
+                                  <div class="workspace-mini-kpi p-3 h-100">
+                                    <label for="predictFeatureSelect" class="text-muted small fw-semibold">Feature Column</label>
+                                    <select id="predictFeatureSelect" class="form-select form-select-sm mt-1"></select>
                                   </div>
                                 </div>
                               </div>
@@ -294,141 +285,27 @@ if (isset($_GET['upload'])) {
                                 <div class="col-6 col-lg-3"><div class="workspace-mini-kpi p-3"><div class="text-muted small">MAE</div><div class="h5 mb-0" id="predictionMae">-</div></div></div>
                                 <div class="col-6 col-lg-3"><div class="workspace-mini-kpi p-3"><div class="text-muted small">RMSE</div><div class="h5 mb-0" id="predictionRmse">-</div></div></div>
                               </div>
-                              <div id="predictionMatrix" class="workspace-chart-placeholder text-muted small mb-3">Predicted values will appear here for the Attendance-based regression.</div>
-                              <pre id="predictOutput" class="p-3 bg-light rounded-3 small mb-0">No predictions yet.</pre>
+                              <div id="predictionMatrix" class="workspace-chart-placeholder text-muted small mb-3">Predicted values and regression chart will appear after training.</div>
+                              <div id="predictionInsight" class="alert alert-info shadow-sm d-none mt-3" role="alert"></div>
+                              <div id="predictOutput" class="d-none"></div>
                             </div>
                           </div>
                         </div>
                       </div>
                     </div>
 
-                    <div class="tab-pane fade" id="pane-export" role="tabpanel">
-                      <div class="card border-0 shadow-sm workspace-section-card">
-                        <div class="card-body">
-                          <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-                            <div>
-                              <h6 class="mb-1">Export</h6>
-                              <p class="text-muted small mb-0">Download the current dataset outputs and generated artifacts.</p>
-                            </div>
-                            <span class="badge text-bg-info-subtle text-info-emphasis">Ready</span>
-                          </div>
-                          <div class="row g-3">
-                            <div class="col-12 col-md-6 col-xl-3"><a href="#" class="btn btn-outline-primary w-100" id="downloadCleanedCsvBtn"><i class="bi bi-filetype-csv me-2"></i>Download Cleaned CSV</a></div>
-                            <div class="col-12 col-md-6 col-xl-3"><button type="button" class="btn btn-outline-secondary w-100" id="downloadAnalysisPdfBtn"><i class="bi bi-file-earmark-pdf me-2"></i>Download Analysis PDF</button></div>
-                            <div class="col-12 col-md-6 col-xl-3"><button type="button" class="btn btn-outline-secondary w-100" id="downloadChartsBtn"><i class="bi bi-images me-2"></i>Download Charts</button></div>
-                            <div class="col-12 col-md-6 col-xl-3"><button type="button" class="btn btn-outline-secondary w-100" id="downloadPredictionResultsBtn"><i class="bi bi-clipboard-data me-2"></i>Download Prediction Results</button></div>
-                          </div>
-                          <div class="workspace-generate-note mt-3">Use the action buttons below to generate fresh analysis outputs before exporting.</div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
 
-              <div class="col-12 col-xl-3">
-                <div class="workspace-sidebar">
-                  <div class="card border-0 shadow-sm">
-                    <div class="card-body">
-                      <h6 class="mb-3">Analytics</h6>
-                      <div class="d-grid gap-2 small text-muted">
-                        <div>Loads after the preview is ready</div>
-                        <div>Shows numeric trends only</div>
-                        <div>Refreshes as soon as data is available</div>
-                      </div>
-                    </div>
                   </div>
                 </div>
-              </div>
             </div>
           </div>
         </div>
       </div>
     </div>
 
-  <!-- Upload Modal -->
-  <div class="modal fade" id="uploadModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-      <div class="modal-content">
-        <form id="uploadForm" enctype="multipart/form-data">
-          <div class="modal-header">
-            <h5 class="modal-title">Upload Dataset</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body">
-            <input type="hidden" name="csrf_token" value="<?php echo e($csrf); ?>">
-            <input type="hidden" name="stored" id="uploadStored">
-            <div id="uploadAlert" class="alert d-none" role="alert"></div>
-            <div class="row g-3">
-              <div class="col-12">
-                <label class="form-label">Dataset file (CSV)</label>
-                <input type="file" id="uploadDatasetFile" name="dataset" class="form-control" accept=".csv">
-              </div>
-              <div class="col-12 col-md-6">
-                <label class="form-label">Dataset name</label>
-                <input type="text" name="dataset_name" id="uploadDatasetName" class="form-control" placeholder="Optional">
-              </div>
-              <div class="col-12 col-md-6">
-                <label class="form-label">Shared scope</label>
-                <select name="shared_scope" id="uploadSharedScope" class="form-select">
-                  <option value="private" selected>Private</option>
-                  <option value="shared">Shared</option>
-                  <option value="public">Public</option>
-                </select>
-              </div>
-              <div class="col-12">
-                <label class="form-label">Description</label>
-                <textarea name="description" id="uploadDescription" class="form-control" rows="3" placeholder="Optional description"></textarea>
-              </div>
-            </div>
-
-            <div class="mt-4 border rounded-3 p-3 bg-light">
-              <div class="d-flex justify-content-between align-items-center mb-3">
-                <div>
-                  <h6 class="mb-1">Upload Preview</h6>
-                  <p class="text-muted small mb-0">Preview the first rows and apply cleaning options before saving.</p>
-                </div>
-                <div class="btn-group btn-group-sm" role="group" aria-label="Upload preview actions">
-                  <button type="button" id="uploadPreviewBtn" class="btn btn-outline-primary">Preview Data</button>
-                  <button type="button" id="uploadCleanPreviewBtn" class="btn btn-outline-secondary">Preview Cleaned</button>
-                </div>
-              </div>
-              <div id="uploadPreviewControls" class="row g-3 mb-3 d-none">
-                <div class="col-12 col-md-6">
-                  <label class="form-label small">Missing values strategy</label>
-                  <select id="uploadMissingStrategy" class="form-select form-select-sm">
-                    <option value="none" selected>No automatic fill</option>
-                    <option value="fill_zero">Fill zeros</option>
-                    <option value="fill_mean">Fill mean</option>
-                  </select>
-                </div>
-                <div class="col-12 col-md-6 d-flex align-items-end">
-                  <div class="form-check">
-                    <input class="form-check-input" type="checkbox" id="uploadRemoveDuplicates" checked>
-                    <label class="form-check-label" for="uploadRemoveDuplicates">Remove duplicate rows</label>
-                  </div>
-                </div>
-              </div>
-
-              <div id="uploadPreviewArea" class="border rounded-3 p-3 bg-white small text-muted">Select a CSV file and click Preview Data to inspect rows and cleaning effects.</div>
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-            <button type="submit" class="btn btn-primary" id="uploadSaveBtn">Save to Workspace</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-      </main>
-    </div>
-  </div>
-
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="/Data/assets/js/datasets_workspace.js"></script>
   <script src="/Data/assets/js/datasets.js"></script>
-  <script src="/Data/assets/js/datasets_upload.js"></script>
 </body>
 </html>

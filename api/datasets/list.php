@@ -8,7 +8,6 @@ require_login();
 $user = current_user();
 
 $search = trim((string) ($_GET['search'] ?? ''));
-$scope = trim((string) ($_GET['scope'] ?? ''));
 $status = trim((string) ($_GET['status'] ?? ''));
 $page = max(1, (int) ($_GET['page'] ?? 1));
 $perPage = min(50, max(5, (int) ($_GET['per_page'] ?? 10)));
@@ -20,12 +19,8 @@ $params = [];
 // Role-based visibility
 if (user_has_role(['administrator'])) {
     // no extra where
-} elseif (user_has_role(['teacher'])) {
-    $where = 'WHERE (d.owner_user_id = :uid OR d.shared_scope <> "private")';
-    $params['uid'] = $user['user_id'];
 } else {
-    // student
-    $where = 'WHERE (d.shared_scope <> "private" OR d.owner_user_id = :uid)';
+    $where = 'WHERE d.owner_user_id = :uid';
     $params['uid'] = $user['user_id'];
 }
 
@@ -39,11 +34,6 @@ if ($search !== '') {
     $params['search'] = '%' . $search . '%';
 }
 
-if ($scope !== '') {
-    $where .= ($where === '' ? 'WHERE ' : ' AND ') . 'd.shared_scope = :scope';
-    $params['scope'] = $scope;
-}
-
 if ($status !== '') {
     $where .= ($where === '' ? 'WHERE ' : ' AND ') . 'd.processing_status = :status';
     $params['status'] = $status;
@@ -54,7 +44,7 @@ $stmt = db()->prepare($countSql);
 $stmt->execute($params);
 $total = (int) $stmt->fetchColumn();
 
-$sql = 'SELECT d.dataset_id, d.dataset_name, d.dataset_description, d.owner_user_id, u.full_name AS owner_name, d.source_filename, d.file_path, d.file_size, d.record_count, d.column_count, d.shared_scope, d.processing_status, d.uploaded_at FROM datasets d LEFT JOIN users u ON u.user_id = d.owner_user_id ' . $where . ' ORDER BY d.uploaded_at DESC LIMIT :limit OFFSET :offset';
+$sql = 'SELECT d.dataset_id, d.dataset_name, d.dataset_description, d.owner_user_id, u.full_name AS owner_name, d.source_filename, d.file_path, d.file_size, d.record_count, d.column_count, d.processing_status, d.uploaded_at FROM datasets d LEFT JOIN users u ON u.user_id = d.owner_user_id ' . $where . ' ORDER BY d.uploaded_at DESC LIMIT :limit OFFSET :offset';
 
 $stmt = db()->prepare($sql);
 foreach ($params as $k => $v) {
@@ -65,16 +55,6 @@ $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
 $stmt->execute();
 $rows = $stmt->fetchAll();
 
-json_response([
-    'success' => true,
-    'data' => $rows,
-    'meta' => [
-        'page' => $page,
-        'per_page' => $perPage,
-        'total' => $total,
-        'total_pages' => (int) max(1, ceil($total / $perPage)),
-    ],
-]);
 json_response([
     'success' => true,
     'data' => $rows,

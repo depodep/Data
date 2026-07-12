@@ -38,7 +38,7 @@ if (!$isAdministrator) {
 }
 
 $recentDatasets = db()->prepare(
-    'SELECT d.dataset_id, d.dataset_name, d.shared_scope, d.processing_status, d.record_count, d.uploaded_at, d.file_type, u.full_name AS owner_name
+    'SELECT d.dataset_id, d.dataset_name, d.processing_status, d.record_count, d.uploaded_at, d.file_type, u.full_name AS owner_name
      FROM datasets d
      INNER JOIN users u ON u.user_id = d.owner_user_id
      ' . $datasetWhere . '

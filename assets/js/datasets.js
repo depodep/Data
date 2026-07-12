@@ -4,7 +4,6 @@ document.addEventListener('DOMContentLoaded', () => {
     page: 1,
     perPage: 10,
     search: '',
-    scope: urlParams.get('scope') === 'shared' ? 'shared' : '',
     myDatasets: urlParams.get('filter') === 'my',
     status: urlParams.get('status') === 'archived' ? 'archived' : '',
     totalPages: 1,
@@ -15,7 +14,6 @@ document.addEventListener('DOMContentLoaded', () => {
     grid: document.getElementById('datasetsGrid'),
     pagination: document.getElementById('datasetsPagination'),
     search: document.getElementById('searchDatasets'),
-    scope: document.getElementById('filterScope'),
     perPage: document.getElementById('perPage'),
   };
 
@@ -46,7 +44,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const owner = escapeHtml(dataset.owner_name || 'Unknown');
     const rows = Number(dataset.record_count || 0);
     const columns = Number(dataset.column_count || 0);
-    const scope = escapeHtml(dataset.shared_scope || 'private');
     const status = escapeHtml(dataset.processing_status || 'Idle');
     const uploaded = dataset.uploaded_at ? new Date(dataset.uploaded_at).toLocaleDateString() : '-';
 
@@ -63,13 +60,16 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="mb-3 text-muted small">
               <div>Rows: ${rows}</div>
               <div>Columns: ${columns}</div>
-              <div>Scope: ${scope}</div>
               <div>Status: ${status}</div>
               <div>Uploaded: ${uploaded}</div>
             </div>
 
             <div class="mt-auto d-grid gap-2">
               <button type="button" class="btn btn-primary btn-sm view-dataset-btn" data-dataset-id="${escapeHtml(dataset.dataset_id)}">View Data Sets</button>
+              <div class="d-flex gap-2">
+                <button type="button" class="btn btn-outline-secondary btn-sm flex-fill edit-dataset-btn" data-dataset-id="${escapeHtml(dataset.dataset_id)}">Edit</button>
+                <button type="button" class="btn btn-outline-danger btn-sm flex-fill remove-dataset-btn" data-dataset-id="${escapeHtml(dataset.dataset_id)}">Remove</button>
+              </div>
             </div>
           </div>
         </article>
@@ -151,6 +151,54 @@ document.addEventListener('DOMContentLoaded', () => {
         openById(Number(button.dataset.datasetId));
       });
     });
+
+    els.grid.querySelectorAll('.edit-dataset-btn').forEach((button) => {
+      button.addEventListener('click', (event) => {
+        event.stopPropagation();
+        const datasetId = Number(button.dataset.datasetId);
+        const dataset = state.datasetsById.get(datasetId);
+        if (!dataset) return;
+        
+        document.getElementById('editDatasetId').value = dataset.dataset_id;
+        document.getElementById('editDatasetName').value = dataset.dataset_name || dataset.source_filename || '';
+        document.getElementById('editDatasetDescription').value = dataset.dataset_description || '';
+        
+        const modalEl = document.getElementById('editDatasetModal');
+        const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+        modal.show();
+      });
+    });
+
+    els.grid.querySelectorAll('.remove-dataset-btn').forEach((button) => {
+      button.addEventListener('click', async (event) => {
+        event.stopPropagation();
+        const datasetId = Number(button.dataset.datasetId);
+        if (!confirm('Are you sure you want to remove this dataset? This action cannot be undone.')) return;
+        
+        const originalText = button.innerHTML;
+        button.disabled = true;
+        button.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
+        
+        try {
+          const formData = new FormData();
+          formData.append('dataset_id', String(datasetId));
+          formData.append('csrf_token', document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '');
+          const response = await fetch('/Data/api/datasets/delete.php', { method: 'POST', body: formData });
+          const json = await response.json();
+          if (json.success) {
+            loadDatasets();
+          } else {
+            alert(json.message || 'Error removing dataset');
+            button.disabled = false;
+            button.innerHTML = originalText;
+          }
+        } catch (e) {
+          alert('Error removing dataset');
+          button.disabled = false;
+          button.innerHTML = originalText;
+        }
+      });
+    });
   };
 
   const loadDatasets = async () => {
@@ -162,9 +210,6 @@ document.addEventListener('DOMContentLoaded', () => {
       per_page: String(state.perPage),
       search: state.search,
     });
-    if (state.scope) {
-      params.set('scope', state.scope);
-    }
     if (state.myDatasets) {
       params.set('my_datasets', '1');
     }
@@ -204,24 +249,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  if (els.scope) {
-    els.scope.addEventListener('change', () => {
-      state.scope = els.scope.value;
-      state.page = 1;
-      loadDatasets();
-    });
-  }
-
   if (els.perPage) {
     els.perPage.addEventListener('change', () => {
       state.perPage = Number(els.perPage.value) || 10;
       state.page = 1;
       loadDatasets();
     });
-  }
-
-  if (els.scope && state.scope) {
-    els.scope.value = state.scope;
   }
 
   if (urlParams.get('upload') === '1') {
@@ -231,5 +264,72 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  const injectEditModal = () => {
+    if (document.getElementById('editDatasetModal')) return;
+    const modalHtml = `
+      <div class="modal fade" id="editDatasetModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title">Edit Dataset</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <form id="editDatasetForm">
+                <input type="hidden" id="editDatasetId" name="dataset_id">
+                <div class="mb-3">
+                  <label class="form-label">Dataset Name</label>
+                  <input type="text" class="form-control" id="editDatasetName" name="dataset_name" required>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Description</label>
+                  <textarea class="form-control" id="editDatasetDescription" name="dataset_description" rows="3"></textarea>
+                </div>
+              </form>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+              <button type="button" class="btn btn-primary" id="saveDatasetBtn">Save Changes</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+    document.getElementById('saveDatasetBtn').addEventListener('click', async () => {
+      const form = document.getElementById('editDatasetForm');
+      if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+      }
+      if (!confirm('Are you sure you want to save these changes?')) return;
+
+      const btn = document.getElementById('saveDatasetBtn');
+      const originalText = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Saving...';
+      
+      try {
+        const formData = new FormData(form);
+        formData.append('csrf_token', document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '');
+        const response = await fetch('/Data/api/datasets/update.php', { method: 'POST', body: formData });
+        const json = await response.json();
+        if (json.success) {
+          bootstrap.Modal.getInstance(document.getElementById('editDatasetModal'))?.hide();
+          loadDatasets();
+        } else {
+          alert(json.message || 'Error updating dataset');
+        }
+      } catch (e) {
+        alert('Error updating dataset');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+      }
+    });
+  };
+
+  injectEditModal();
   loadDatasets();
 });
