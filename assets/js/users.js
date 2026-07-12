@@ -88,16 +88,28 @@ document.addEventListener('DOMContentLoaded', () => {
       usersCache.set(String(user.user_id), user);
     });
 
+    const tableRole = tableBody.dataset.role || '';
+    const idCell = (user) => {
+      if (tableRole === 'student') {
+        return `<td>${escapeHtml(user.student_id || '-')}</td>`;
+      }
+      if (tableRole === 'administrator' || tableRole === 'teacher') {
+        return `<td>${escapeHtml(user.employee_id || '-')}</td>`;
+      }
+      // No role filter — show both
+      return `<td>${escapeHtml(user.student_id || '-')}</td><td>${escapeHtml(user.employee_id || '-')}</td>`;
+    };
+
+    const emptyColspan = (tableRole === 'student' || tableRole === 'administrator' || tableRole === 'teacher') ? 6 : 7;
     tableBody.innerHTML = rows.length === 0
-      ? '<tr><td colspan="7" class="text-center text-muted py-4">No users found.</td></tr>'
+      ? `<tr><td colspan="${emptyColspan}" class="text-center text-muted py-4">No users found.</td></tr>`
       : rows.map((user) => `
           <tr>
             <td>${escapeHtml(user.full_name)}</td>
             <td>${escapeHtml(user.email)}</td>
             <td>${escapeHtml(user.role_name)}</td>
             <td><span class="badge text-bg-${user.status === 'active' ? 'success' : user.status === 'pending' ? 'warning' : 'secondary'}">${escapeHtml(user.status)}</span></td>
-            <td>${escapeHtml(user.student_id || '-')}</td>
-            <td>${escapeHtml(user.employee_id || '-')}</td>
+            ${idCell(user)}
             <td class="text-end">
               <button class="btn btn-sm btn-outline-primary me-2" data-action="edit" data-user-id="${user.user_id}">Edit</button>
               <button class="btn btn-sm btn-outline-danger" data-action="delete" data-user-id="${user.user_id}">Delete</button>

@@ -109,12 +109,18 @@ if ($tab === 'activity' || $tab === 'audit') {
                                                     <th>Email</th>
                                                     <th>Role</th>
                                                     <th>Status</th>
-                                                    <th>Student ID</th>
-                                                    <th>Employee ID</th>
+                                                    <?php if ($role === 'student'): ?>
+                                                        <th>Student ID</th>
+                                                    <?php elseif ($role === 'administrator' || $role === 'teacher'): ?>
+                                                        <th>Employee ID</th>
+                                                    <?php else: ?>
+                                                        <th>Student ID</th>
+                                                        <th>Employee ID</th>
+                                                    <?php endif; ?>
                                                     <th class="text-end">Actions</th>
                                                 </tr>
                                             </thead>
-                                            <tbody id="usersTableBody"></tbody>
+                                            <tbody id="usersTableBody" data-role="<?php echo e($role); ?>"></tbody>
                                         </table>
                                     </div>
 

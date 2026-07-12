@@ -443,4 +443,19 @@ COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
-/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION 
+
+
+
+Role	Name	Login Credential
+👑 Administrator	Administrator	admin@test.com
+👨🏫 Teacher	Juan Delacruz	juastdelacruz@test.com
+🎓 Student	Student One	Student ID: 41382
+🎓 Student	Santos, Maria	Student ID: 52714
+🎓 Student	Student Three	Student ID: student3
+
+
+
+
+
+*/;
