@@ -85,16 +85,11 @@ CREATE TABLE `users` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
--- Seed accounts (all passwords: password123)
--- Students log in with their student_id; admin & teacher use email.
+-- Initial admin account (password: Admin@1234 — change after first login)
 --
 
-INSERT INTO `users` (`role_id`, `student_id`, `full_name`, `email`, `password_hash`, `status`) VALUES
-(1, NULL, 'Administrator',   'admin@test.com',           '$2y$10$aGJtifE/H3ci9jrnrrj8PO2ZqbH/Y/CYRzL7YTaEl0rhhGAJLrLRK', 'active'),
-(2, NULL, 'Juan Delacruz',   'juastdelacruz@test.com',   '$2y$10$aGJtifE/H3ci9jrnrrj8PO2ZqbH/Y/CYRzL7YTaEl0rhhGAJLrLRK', 'active'),
-(3, '41382',    'Student One',       'student1@internal.local',  '$2y$10$aGJtifE/H3ci9jrnrrj8PO2ZqbH/Y/CYRzL7YTaEl0rhhGAJLrLRK', 'active'),
-(3, '52714',    'Santos, Maria',     'student2@internal.local',  '$2y$10$aGJtifE/H3ci9jrnrrj8PO2ZqbH/Y/CYRzL7YTaEl0rhhGAJLrLRK', 'active'),
-(3, 'student3', 'Student Three',     'student3@internal.local',  '$2y$10$aGJtifE/H3ci9jrnrrj8PO2ZqbH/Y/CYRzL7YTaEl0rhhGAJLrLRK', 'active');
+INSERT INTO `users` (`role_id`, `full_name`, `email`, `password_hash`, `status`) VALUES
+(1, 'Administrator', 'admin@example.com', '$2y$10$xLR5zQFgCvSm3fQWtruIfOdbMqaO96awdFT6TfUBuwdlmiyl6Xj/2', 'active');
 
 -- --------------------------------------------------------
 

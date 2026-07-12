@@ -52,6 +52,8 @@ if (preg_match('/CREATE\s+DATABASE\s+(?:IF\s+NOT\s+EXISTS\s+)?`?([a-zA-Z0-9_]+)`
     // Fallback if the dump doesn't have CREATE DATABASE but we can extract it from USE statement
     if (preg_match('/USE\s+`?([a-zA-Z0-9_]+)`?/i', $sqlContent, $matches)) {
         $dbName = $matches[1];
+    } elseif (preg_match('/--\s+Database:\s+`?([a-zA-Z0-9_]+)`?/i', $sqlContent, $matches)) {
+        $dbName = $matches[1];
     }
 }
 

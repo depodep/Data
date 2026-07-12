@@ -344,9 +344,15 @@ if ($tab === 'activity' || $tab === 'audit') {
                                     <label class="form-label" for="employee_id">Employee ID</label>
                                     <input type="text" class="form-control" name="employee_id" id="employee_id">
                                 </div>
-                                <div class="col-md-12">
+                                <div class="col-md-6" id="password_container">
                                     <label class="form-label" for="password">Password</label>
-                                    <input type="password" class="form-control" name="password" id="password" placeholder="Leave blank when updating without changing password">
+                                    <input type="password" class="form-control" name="password" id="password" placeholder="Required – min. 8 characters">
+                                    <div class="invalid-feedback" id="passwordError"></div>
+                                </div>
+                                <div class="col-md-6" id="confirm_password_container">
+                                    <label class="form-label" for="confirm_password">Confirm Password</label>
+                                    <input type="password" class="form-control" name="confirm_password" id="confirm_password" placeholder="Re-enter password">
+                                    <div class="invalid-feedback" id="confirmPasswordError"></div>
                                 </div>
                             </div>
                         </div>

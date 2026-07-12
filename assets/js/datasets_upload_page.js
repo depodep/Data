@@ -996,9 +996,7 @@ document.addEventListener('DOMContentLoaded', () => {
         throw new Error(json.message || 'Dataset save failed.');
       }
       showAlert(json.message || 'Dataset saved successfully.', 'success');
-      if (json.dataset_id) {
-        window.location.href = `/Data/pages/datasets/workspace.php?id=${encodeURIComponent(json.dataset_id)}`;
-      }
+      window.location.href = '/Data/pages/datasets/index.php';
     } catch (error) {
       showAlert(error.message || 'Unable to save dataset.', 'danger');
     }

@@ -149,10 +149,27 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('phone').value = user.phone || '';
     document.getElementById('student_id').value = user.student_id || '';
     document.getElementById('employee_id').value = user.employee_id || '';
-    document.getElementById('password').value = '';
+    const passwordInput = document.getElementById('password');
+    const confirmInput = document.getElementById('confirm_password');
+    const confirmContainer = document.getElementById('confirm_password_container');
+    const passwordError = document.getElementById('passwordError');
+    const confirmError = document.getElementById('confirmPasswordError');
+
+    passwordInput.value = '';
+    confirmInput.value = '';
+    passwordInput.placeholder = mode === 'create'
+      ? 'Required – min. 8 characters'
+      : 'Leave blank to keep current password';
+    passwordInput.classList.remove('is-invalid');
+    confirmInput.classList.remove('is-invalid');
+    if (passwordError) passwordError.textContent = '';
+    if (confirmError) confirmError.textContent = '';
+
+    // Show confirm password only on create
+    confirmContainer.style.display = mode === 'create' ? '' : 'none';
+
     modalTitle.textContent = mode === 'create' ? 'Create User' : 'Update User';
     form.dataset.action = mode;
-    document.getElementById('password').required = (mode === 'create');
     handleRoleChange();
     userModal.show();
   };
@@ -203,6 +220,51 @@ document.addEventListener('DOMContentLoaded', () => {
     const action = form.dataset.action || 'create';
     formData.set('action', action);
     formData.set('csrf_token', csrfToken);
+
+    // Front-end password validation
+    const passwordInput = document.getElementById('password');
+    const confirmInput = document.getElementById('confirm_password');
+    const passwordError = document.getElementById('passwordError');
+    const confirmError = document.getElementById('confirmPasswordError');
+    const passwordValue = passwordInput.value;
+    const confirmValue = confirmInput.value;
+
+    passwordInput.classList.remove('is-invalid');
+    confirmInput.classList.remove('is-invalid');
+    if (passwordError) passwordError.textContent = '';
+    if (confirmError) confirmError.textContent = '';
+
+    if (action === 'create') {
+      // Password required on create
+      if (passwordValue.trim() === '') {
+        passwordInput.classList.add('is-invalid');
+        if (passwordError) passwordError.textContent = 'Password is required when creating a user.';
+        passwordInput.focus();
+        return;
+      }
+      // Minimum length
+      if (passwordValue.length < 8) {
+        passwordInput.classList.add('is-invalid');
+        if (passwordError) passwordError.textContent = 'Password must be at least 8 characters.';
+        passwordInput.focus();
+        return;
+      }
+      // Confirm password must match
+      if (confirmValue !== passwordValue) {
+        confirmInput.classList.add('is-invalid');
+        if (confirmError) confirmError.textContent = 'Passwords do not match.';
+        confirmInput.focus();
+        return;
+      }
+    } else {
+      // On update: only validate if a new password was entered
+      if (passwordValue !== '' && passwordValue.length < 8) {
+        passwordInput.classList.add('is-invalid');
+        if (passwordError) passwordError.textContent = 'Password must be at least 8 characters.';
+        passwordInput.focus();
+        return;
+      }
+    }
 
     const response = await fetch('/Data/api/admin/users.php', {
       method: 'POST',
