@@ -31,7 +31,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     const result = await response.json();
 
-    roleSelect.innerHTML = result.data.map((role) => `<option value="${role.role_id}">${role.role_name}</option>`).join('');
+    roleSelect.innerHTML = result.data.map((role) => `<option value="${role.role_id}" data-slug="${role.role_slug}">${role.role_name}</option>`).join('');
+    handleRoleChange();
   };
 
   const renderPagination = (meta) => {
@@ -151,8 +152,33 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('password').value = '';
     modalTitle.textContent = mode === 'create' ? 'Create User' : 'Update User';
     form.dataset.action = mode;
+    document.getElementById('password').required = (mode === 'create');
+    handleRoleChange();
     userModal.show();
   };
+
+  const handleRoleChange = () => {
+    const option = roleSelect.options[roleSelect.selectedIndex];
+    if (!option) return;
+    const slug = option.dataset.slug;
+    const studentContainer = document.getElementById('student_id').closest('div');
+    const employeeContainer = document.getElementById('employee_id').closest('div');
+    
+    if (slug === 'student') {
+      studentContainer.classList.remove('d-none');
+      document.getElementById('student_id').required = true;
+      employeeContainer.classList.add('d-none');
+      document.getElementById('employee_id').required = false;
+    } else if (slug === 'teacher' || slug === 'administrator') {
+      studentContainer.classList.add('d-none');
+      document.getElementById('student_id').required = false;
+      employeeContainer.classList.remove('d-none');
+    } else {
+      studentContainer.classList.remove('d-none');
+      employeeContainer.classList.remove('d-none');
+    }
+  };
+  roleSelect.addEventListener('change', handleRoleChange);
 
   const escapeHtml = (value) => String(value ?? '')
     .replaceAll('&', '&amp;')

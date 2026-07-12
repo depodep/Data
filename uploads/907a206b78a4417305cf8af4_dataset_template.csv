@@ -1,0 +1,31 @@
+Student ID,Student Name,Course,Year Level,Section,Subject,Quiz Score,Midterm Score,Final Score,Attendance
+41382,John Dela Cruz,BSIT,1,A,Programming 1,88,85,90,96
+52714,Maria Santos,BSIT,1,A,Programming 1,91,89,93,98
+68429,Kevin Reyes,BSIT,1,A,Programming 1,76,80,,91
+39581,Angela Flores,BSIT,1,A,Programming 1,95,94,96,99
+74165,Mark Garcia,BSIT,,A,Programming 1,83,81,85,94
+25638,Princess Ramos,BSIT,1,A,Programming 1,,87,91,
+60841,Daniel Mendoza,,1,A,Programming 1,78,75,80,90
+93427,Jasmine Cruz,BSIT,1,A,,92,90,94,98
+58210,Carl Bautista,BSIT,1,A,Programming 1,85,84,88,95
+,,,,,Programming 1,90,91,,97
+81946,Joshua Villanueva,BSIT,2,B,Database Systems,74,77,79,89
+37025,Alyssa Perez,BSIT,2,,Database Systems,86,88,90,96
+65813,Christian Lopez,BSIT,2,B,Database Systems,81,,84,93
+,Patricia Aquino,,,B,Database Systems,93,95,97,99
+50276,,BSIT,2,B,Database Systems,79,80,82,92
+28465,Sophia Navarro,BSIT,2,B,Database Systems,88,86,89,95
+93504,Adrian Gutierrez,BSIT,2,B,Database Systems,70,74,76,87
+41673,Hannah Rivera,BSIT,,B,Database Systems,97,96,98,100
+87391,Ethan Morales,BSIT,2,B,Database Systems,84,82,86,94
+53168,Camille Herrera,BSIT,2,B,Database Systems,90,91,93,98
+69245,,BSIT,3,C,Web Development,87,,91,97
+31587,Bea Mendoza,BSIT,3,,Web Development,82,84,86,
+75830,Nathan Salazar,BSIT,3,C,Web Development,94,93,95,99
+48126,Karen Domingo,BSIT,3,C,,77,79,81,90
+96354,Ian Alvarez,BSIT,3,C,Web Development,85,87,88,95
+62417,Chloe Herrera,,3,C,Web Development,91,92,94,98
+54792,Patrick Lim,BSIT,3,C,Web Development,73,76,78,88
+83261,Faith Velasco,BSIT,3,C,Web Development,96,95,97,100
+27584,,BSIT,3,C,Web Development,80,82,84,93
+71943,Denise Cabrera,BSIT,3,C,Web Development,89,90,92,97

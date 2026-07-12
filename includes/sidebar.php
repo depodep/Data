@@ -45,59 +45,28 @@ $activeSubPage = $activeSubPage ?? '';
                     <ul class="sidebar-submenu">
                         <li class="sidebar-submenu-item">
                             <a class="sidebar-submenu-link <?php echo $activeSubPage === 'users_admin' ? 'active' : ''; ?>" href="/Data/pages/admin/users/index.php?role=administrator">
-                                Administrators
+                                <i class="fa-solid fa-user-shield me-2"></i>Administrators
                             </a>
                         </li>
                         <li class="sidebar-submenu-item">
                             <a class="sidebar-submenu-link <?php echo $activeSubPage === 'users_teacher' ? 'active' : ''; ?>" href="/Data/pages/admin/users/index.php?role=teacher">
-                                Teachers
+                                <i class="fa-solid fa-chalkboard-user me-2"></i>Teachers
                             </a>
                         </li>
                         <li class="sidebar-submenu-item">
                             <a class="sidebar-submenu-link <?php echo $activeSubPage === 'users_student' ? 'active' : ''; ?>" href="/Data/pages/admin/users/index.php?role=student">
-                                Students
-                            </a>
-                        </li>
-                        <li class="sidebar-submenu-item">
-                            <a class="sidebar-submenu-link <?php echo $activeSubPage === 'roles' ? 'active' : ''; ?>" href="/Data/pages/admin/users/index.php?tab=roles">
-                                Roles & Permissions
+                                <i class="fa-solid fa-user-graduate me-2"></i>Students
                             </a>
                         </li>
                         <li class="sidebar-submenu-item">
                             <a class="sidebar-submenu-link <?php echo $activeSubPage === 'activity_logs' ? 'active' : ''; ?>" href="/Data/pages/admin/users/index.php?tab=activity">
-                                Activity Logs
+                                <i class="fa-solid fa-list-check me-2"></i>Activity Logs
                             </a>
                         </li>
                     </ul>
                 </li>
 
-                <li class="sidebar-nav-item">
-                    <div class="sidebar-submenu-title">
-                        <i class="fa-solid fa-cog me-2"></i>System Settings
-                    </div>
-                    <ul class="sidebar-submenu">
-                        <li class="sidebar-submenu-item">
-                            <a class="sidebar-submenu-link <?php echo $activeSubPage === 'academic_year' ? 'active' : ''; ?>" href="/Data/pages/admin/users/index.php?tab=academic_year">
-                                Academic Year
-                            </a>
-                        </li>
-                        <li class="sidebar-submenu-item">
-                            <a class="sidebar-submenu-link <?php echo $activeSubPage === 'sys_config' ? 'active' : ''; ?>" href="/Data/pages/admin/users/index.php?tab=config">
-                                System Configuration
-                            </a>
-                        </li>
-                        <li class="sidebar-submenu-item">
-                            <a class="sidebar-submenu-link <?php echo $activeSubPage === 'backup' ? 'active' : ''; ?>" href="/Data/pages/admin/users/index.php?tab=backup">
-                                Backup & Restore
-                            </a>
-                        </li>
-                        <li class="sidebar-submenu-item">
-                            <a class="sidebar-submenu-link <?php echo $activeSubPage === 'audit_logs' ? 'active' : ''; ?>" href="/Data/pages/admin/users/index.php?tab=audit">
-                                Audit Logs
-                            </a>
-                        </li>
-                    </ul>
-                </li>
+
             <?php endif; ?>
 
             <li class="sidebar-nav-item mt-4">

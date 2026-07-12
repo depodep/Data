@@ -35,6 +35,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const requiredFields = ['Student ID', 'Student Name', 'Course', 'Year Level', 'Section', 'Subject'];
   const numericFields = ['Quiz Score', 'Midterm Score', 'Final Score', 'Attendance'];
   const editableColumns = [...requiredFields, ...numericFields];
+  const textOnlyFields = ['Student Name', 'Course', 'Section'];
+  const strictNumericFields = [...numericFields, 'Year Level'];
 
   const state = {
     rawRows: [],
@@ -87,7 +89,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     const { showDuplicate = true, excludeColumns = [] } = options;
     const hasDuplicate = showDuplicate && rows.some((row) => row.__duplicate);
-    const allColumns = Object.keys(rows[0]).filter((col) => col !== '__modified' && col !== '__errors' && col !== '__duplicate' && col !== '__invalid');
+    const allColumns = Object.keys(rows[0]).filter((col) => col !== '__modified' && col !== '__errors' && col !== '__duplicate' && col !== '__invalid' && col !== '__filled_cells');
     const columns = allColumns.filter((col) => !excludeColumns.includes(col));
     const displayColumns = [...columns, ...(hasDuplicate ? ['Duplicate'] : [])];
     const headerHtml = displayColumns.map((col) => `<th class="align-middle text-nowrap">${escapeHtml(col)}</th>`).join('');
@@ -116,100 +118,7 @@ document.addEventListener('DOMContentLoaded', () => {
     `;
   };
 
-  const renderValidationSummary = (scan) => {
-    if (!els.validationSummaryCards) return;
-    els.validationSummaryCards.innerHTML = `
-      <div class="col-6 col-md-4">
-        <div class="card border-0 bg-light p-3">
-          <div class="text-muted small">Rows</div>
-          <div class="h4 mb-0">${scan.total_rows}</div>
-        </div>
-      </div>
-      <div class="col-6 col-md-4">
-        <div class="card border-0 bg-light p-3">
-          <div class="text-muted small">Columns</div>
-          <div class="h4 mb-0">${scan.column_count}</div>
-        </div>
-      </div>
-      <div class="col-6 col-md-4">
-        <div class="card border-0 bg-light p-3">
-          <div class="text-muted small">Missing values</div>
-          <div class="h4 mb-0">${Object.values(scan.missing_counts).reduce((sum, value) => sum + Number(value), 0)}</div>
-        </div>
-      </div>
-      <div class="col-6 col-md-4">
-        <div class="card border-0 bg-light p-3">
-          <div class="text-muted small">Duplicate rows</div>
-          <div class="h4 mb-0">${scan.duplicate_count}</div>
-        </div>
-      </div>
-      <div class="col-6 col-md-4">
-        <div class="card border-0 bg-light p-3">
-          <div class="text-muted small">Numeric issues</div>
-          <div class="h4 mb-0">${scan.invalid_numeric_count}</div>
-        </div>
-      </div>
-      <div class="col-6 col-md-4">
-        <div class="card border-0 bg-light p-3">
-          <div class="text-muted small">Detected issues</div>
-          <div class="h4 mb-0">${scan.issue_count}</div>
-        </div>
-      </div>
-    `;
-  };
 
-  const renderValidationReport = (scan) => {
-    if (!els.validationChecks || !els.validationStatusBadge) return;
-    const issueSeverity = scan.issue_count > 0 ? 'Issues found' : 'No issues detected';
-    els.validationStatusBadge.textContent = issueSeverity;
-    els.validationStatusBadge.className = `badge ${scan.issue_count > 0 ? 'bg-warning text-dark' : 'bg-success'}`;
-
-    const checks = [
-      { title: 'Template structure matches', status: 'success', detail: 'Required headers are present.' },
-      { title: 'Dataset is readable', status: 'success', detail: `${scan.total_rows} rows loaded successfully.` },
-      { title: 'Duplicate rows flagged', status: scan.duplicate_count > 0 ? 'warning' : 'success', detail: scan.duplicate_count > 0 ? `${scan.duplicate_count} duplicates found.` : 'No duplicates found.' },
-      { title: 'Missing values scan', status: Object.values(scan.missing_counts).some((count) => Number(count) > 0) ? 'warning' : 'success', detail: Object.values(scan.missing_counts).some((count) => Number(count) > 0) ? 'Missing values exist.' : 'No missing values found.' },
-      { title: 'Numeric column validation', status: scan.invalid_numeric_count > 0 ? 'danger' : 'success', detail: scan.invalid_numeric_count > 0 ? `${scan.invalid_numeric_count} invalid entries in numeric columns.` : 'Numeric values look clean.' },
-    ];
-
-    els.validationChecks.innerHTML = checks.map((check) => `
-      <div class="list-group-item d-flex justify-content-between align-items-start py-3">
-        <div>
-          <div class="fw-semibold">${escapeHtml(check.title)}</div>
-          <div class="small text-muted">${escapeHtml(check.detail)}</div>
-        </div>
-        <span class="badge ${check.status === 'success' ? 'bg-success' : check.status === 'warning' ? 'bg-warning text-dark' : 'bg-danger'} align-self-start">${check.status}</span>
-      </div>
-    `).join('');
-  };
-
-  const renderErrorTable = (scan) => {
-    if (!els.validationErrorsTable || !els.errorsCountBadge) return;
-    els.errorsCountBadge.textContent = `${scan.issue_count} issue${scan.issue_count === 1 ? '' : 's'}`;
-    if (scan.issue_count === 0) {
-      els.validationErrorsTable.innerHTML = `<tr><td colspan="6" class="text-muted text-center py-4">No validation issues detected.</td></tr>`;
-      return;
-    }
-
-    els.validationErrorsTable.innerHTML = scan.issues.map((issue, index) => `
-      <tr class="issue-row" data-row="${issue.row}">
-        <td class="text-nowrap">${issue.row}</td>
-        <td class="text-nowrap">${escapeHtml(issue.column)}</td>
-        <td>${escapeHtml(issue.problem)}</td>
-        <td>${escapeHtml(issue.value)}</td>
-        <td>${escapeHtml(issue.recommendation)}</td>
-        <td><span class="badge ${issue.status === 'danger' ? 'bg-danger' : issue.status === 'warning' ? 'bg-warning text-dark' : 'bg-success'}">${escapeHtml(issue.status)}</span></td>
-      </tr>
-    `).join('');
-
-    Array.from(els.validationErrorsTable.querySelectorAll('.issue-row')).forEach((row) => {
-      row.addEventListener('click', () => {
-        const rowIndex = Number(row.getAttribute('data-row')) - 2;
-        if (!Number.isFinite(rowIndex) || rowIndex < 0) return;
-        highlightRawPreviewRow(rowIndex);
-      });
-    });
-  };
 
   const renderPreparationOptions = () => {
     if (!els.preparationControls) return;
@@ -342,13 +251,12 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    const allColumns = Object.keys(rows[0]).filter((col) => col !== '__modified' && col !== '__errors' && col !== '__duplicate' && col !== '__invalid');
+    const allColumns = Object.keys(rows[0]).filter((col) => col !== '__modified' && col !== '__errors' && col !== '__duplicate' && col !== '__invalid' && col !== '__filled_cells');
     const visibleColumns = allColumns.filter((col) => !state.removedColumns.includes(col));
 
     const headerHtml = visibleColumns.map((col) => `
       <th class="align-middle text-nowrap">
         ${escapeHtml(col)}
-        <button type="button" class="btn btn-sm btn-link text-danger p-0 ms-1 remove-col-btn" data-col="${escapeHtml(col)}" title="Remove column"><i class="bi bi-x-circle"></i></button>
       </th>
     `).join('');
 
@@ -413,6 +321,46 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         cell.classList.remove('filled-by-strategy');
       });
+
+      cell.addEventListener('keypress', (e) => {
+        const column = cell.dataset.col;
+        if (!column) return;
+        
+        if (strictNumericFields.includes(column)) {
+          if (!/[0-9.]/.test(e.key)) {
+            e.preventDefault();
+          } else if (e.key === '.' && cell.textContent.includes('.')) {
+            e.preventDefault();
+          }
+        }
+        
+        if (textOnlyFields.includes(column)) {
+          if (/[0-9]/.test(e.key)) {
+            e.preventDefault();
+          }
+        }
+      });
+
+      cell.addEventListener('paste', (e) => {
+        const column = cell.dataset.col;
+        if (!column) return;
+        
+        const text = (e.clipboardData || window.clipboardData).getData('text');
+        
+        if (strictNumericFields.includes(column)) {
+          let filtered = text.replace(/[^0-9.]/g, '');
+          const dots = filtered.split('.');
+          if (dots.length > 2) {
+            filtered = dots[0] + '.' + dots.slice(1).join('');
+          }
+          e.preventDefault();
+          document.execCommand('insertText', false, filtered);
+        } else if (textOnlyFields.includes(column)) {
+          const filtered = text.replace(/[0-9]/g, '');
+          e.preventDefault();
+          document.execCommand('insertText', false, filtered);
+        }
+      });
     });
 
     // Bind row removal on preparation preview
@@ -429,19 +377,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     });
 
-    // Bind column removal
-    Array.from(els.datasetPreviewArea.querySelectorAll('.remove-col-btn')).forEach((button) => {
-      button.addEventListener('click', () => {
-        const col = button.dataset.col;
-        if (!col) return;
-        if (!state.removedColumns.includes(col)) {
-          state.removedColumns.push(col);
-        }
-        renderPreview(state.previewRows, 'Preparation Preview');
-        renderFinalOutput(state.previewRows);
-        showAlert(`Column "${col}" removed from the prepared dataset.`, 'warning');
-      });
-    });
+    // Column deletion disabled
   };
 
   const renderFinalOutput = (rows) => {
@@ -468,6 +404,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const computeValidationState = (rows) => {
     const duplicates = {};
+    const metrics = {
+      rowsScanned: rows.length,
+      inconsistentCells: 0,
+      affectedRows: 0,
+      missingValues: 0,
+      invalidRanges: 0,
+      invalidDataTypes: 0,
+    };
+
     rows.forEach((row, index) => {
       const studentId = String(row['Student ID'] ?? '').trim().toLowerCase();
       const studentName = String(row['Student Name'] ?? '').trim().toLowerCase();
@@ -476,69 +421,207 @@ document.addEventListener('DOMContentLoaded', () => {
       duplicates[key].push(index);
     });
 
-    const textOnlyFields = ['Student Name', 'Course', 'Section'];
-    const strictNumericFields = [...numericFields, 'Year Level'];
-
-    return rows.map((row, index) => {
+    const rowValidation = rows.map((row, index) => {
       const errors = [];
-      requiredFields.forEach((column) => {
-        if (String(row[column] ?? '').trim() === '') {
-          errors.push({ column, message: `${column} is required.` });
+      let hasError = false;
+
+      const addError = (col, msg, type, rule) => {
+        errors.push({ column: col, message: msg, type, rule, currentValue: row[col] });
+        metrics.inconsistentCells++;
+        hasError = true;
+        if (type === 'missing') metrics.missingValues++;
+        if (type === 'type') metrics.invalidDataTypes++;
+        if (type === 'range') metrics.invalidRanges++;
+      };
+
+      // Student ID
+      const sid = String(row['Student ID'] ?? '').trim();
+      if (!sid) addError('Student ID', 'Missing value', 'missing', 'Required');
+
+      // Student Name
+      const sname = String(row['Student Name'] ?? '').trim();
+      if (!sname) addError('Student Name', 'Missing value', 'missing', 'Required');
+      else if (!/^[a-zA-Z\s.,\-]+$/.test(sname)) addError('Student Name', 'Contains invalid characters', 'type', 'Cannot contain numbers or special symbols (except , . -)');
+      const course = String(row['Course'] ?? '').trim();
+      if (!course) addError('Course', 'Missing value', 'missing', 'Required');
+
+      // Year Level
+      const ylevel = String(row['Year Level'] ?? '').trim();
+      if (!ylevel) addError('Year Level', 'Missing value', 'missing', 'Integer only: 1, 2, 3, or 4');
+      else if (!['1', '2', '3', '4'].includes(ylevel)) addError('Year Level', 'Invalid year level', 'type', 'Integer only: 1, 2, 3, or 4');
+
+      // Section
+      const sec = String(row['Section'] ?? '').trim();
+      if (!sec) addError('Section', 'Missing value', 'missing', 'Required');
+
+      // Subject
+      const subj = String(row['Subject'] ?? '').trim();
+      if (!subj) addError('Subject', 'Missing value', 'missing', 'Required');
+
+      // Scores and Attendance
+      const numericCols = ['Quiz Score', 'Midterm Score', 'Final Score', 'Attendance'];
+      numericCols.forEach(col => {
+        const valStr = String(row[col] ?? '').trim();
+        if (!valStr) {
+          addError(col, 'Missing value', 'missing', 'Must be numeric (0-100)');
+        } else if (!/^\d+(\.\d+)?$/.test(valStr)) {
+          addError(col, 'Contains non-numeric characters', 'type', 'Must be numeric (0-100)');
+        } else {
+          const num = parseFloat(valStr);
+          if (num < 0 || num > 100) {
+            addError(col, 'Value out of range', 'range', 'Must be numeric (0-100)');
+          }
         }
       });
-      textOnlyFields.forEach((column) => {
-        const value = String(row[column] ?? '').trim();
-        if (value !== '' && /\d/.test(value)) {
-          errors.push({ column, message: `${column} cannot contain numbers.` });
-        }
-      });
-      strictNumericFields.forEach((column) => {
-        const value = String(row[column] ?? '').trim();
-        if (value !== '' && !/^\d+(\.\d+)?$/.test(value)) {
-          errors.push({ column, message: `${column} must be numeric.` });
-        }
-      });
-      const studentId = String(row['Student ID'] ?? '').trim().toLowerCase();
-      const studentName = String(row['Student Name'] ?? '').trim().toLowerCase();
-      const duplicateKey = `${studentId}||${studentName}`;
+
+      const studentIdLower = sid.toLowerCase();
+      const studentNameLower = sname.toLowerCase();
+      const duplicateKey = `${studentIdLower}||${studentNameLower}`;
       const duplicate = duplicateKey !== '||' && duplicates[duplicateKey]?.length > 1;
       if (duplicate) {
-        errors.push({ column: 'Duplicate', message: 'Duplicate Student ID and Name detected.' });
+        addError('Duplicate', 'Duplicate Student ID and Name detected.', 'type', 'Must be unique');
       }
-      return {
-        errors,
-        duplicate,
-      };
+
+      if (hasError) metrics.affectedRows++;
+
+      return { errors, duplicate };
     });
+
+    return { rowValidation, metrics };
   };
 
-  const updateValidationState = () => {
-    const rowValidation = computeValidationState(state.rawRows);
+  const updateValidationState = (skipErrorTableRender = false) => {
+    if (!state.rawRows || state.rawRows.length === 0) return;
+    const validationResult = computeValidationState(state.rawRows);
+    const rowValidation = validationResult.rowValidation;
+    state.validation.metrics = validationResult.metrics;
+    
     state.validation.rowDetails = rowValidation;
     state.validation.totalErrors = rowValidation.reduce((sum, item) => sum + item.errors.length, 0);
     state.validation.duplicateRows = rowValidation.filter((item) => item.duplicate).length;
+    
     state.rawRows = state.rawRows.map((row, index) => ({
       ...row,
       __duplicate: rowValidation[index].duplicate,
       __errors: rowValidation[index].errors,
       __invalid: rowValidation[index].errors.length > 0,
     }));
+    if (state.previewRows && state.previewRows.length === state.rawRows.length) {
+      state.previewRows = state.previewRows.map((row, index) => ({
+        ...row,
+        __duplicate: rowValidation[index].duplicate,
+        __errors: rowValidation[index].errors,
+        __invalid: rowValidation[index].errors.length > 0,
+      }));
+    }
+
+    renderValidationSummary();
+    if (!skipErrorTableRender) {
+      renderValidationErrorsTable();
+    }
 
     if (els.datasetValidationSummary) {
       if (state.validation.totalErrors === 0) {
         els.datasetValidationSummary.classList.add('d-none');
       } else {
-        const missingCount = state.validation.rowDetails.reduce((count, item) => count + item.errors.filter((error) => error.message.includes('required')).length, 0);
-        const invalidNumericCount = state.validation.rowDetails.reduce((count, item) => count + item.errors.filter((error) => error.message.includes('numeric') || error.message.includes('cannot contain numbers')).length, 0);
-        const duplicateCount = state.validation.duplicateRows;
-        els.datasetValidationSummary.textContent = `Validation errors: ${state.validation.totalErrors} — ${missingCount} required field issue(s), ${invalidNumericCount} numeric issue(s), ${duplicateCount} duplicate row(s). Fix all issues before saving.`;
         els.datasetValidationSummary.classList.remove('d-none');
       }
     }
 
-    if (els.saveDatasetBtn) els.saveDatasetBtn.disabled = state.validation.totalErrors > 0;
-    if (els.saveAndContinueBtn) els.saveAndContinueBtn.disabled = state.validation.totalErrors > 0;
-    if (els.applyPreparationBtn) els.applyPreparationBtn.disabled = state.validation.totalErrors > 0;
+    const hasErrors = state.validation.totalErrors > 0;
+    if (els.saveDatasetBtn) els.saveDatasetBtn.disabled = hasErrors;
+    if (els.saveAndContinueBtn) els.saveAndContinueBtn.disabled = hasErrors;
+    if (els.applyPreparationBtn) els.applyPreparationBtn.disabled = hasErrors;
+  };
+
+  const renderValidationSummary = () => {
+    if (!els.validationSummaryCards) return;
+    const m = state.validation.metrics;
+    if (!m) return;
+    
+    const readyForSave = state.validation.totalErrors === 0;
+    const readyBadge = readyForSave ? `<span class="badge bg-success">Yes</span>` : `<span class="badge bg-danger">No</span>`;
+
+    els.validationSummaryCards.innerHTML = `
+      <div class="col-12"><div class="d-flex justify-content-between border-bottom pb-2"><span>Rows scanned</span><strong>${m.rowsScanned}</strong></div></div>
+      <div class="col-12"><div class="d-flex justify-content-between border-bottom pb-2"><span>Inconsistent cells</span><strong class="text-danger">${m.inconsistentCells}</strong></div></div>
+      <div class="col-12"><div class="d-flex justify-content-between border-bottom pb-2"><span>Affected rows</span><strong class="text-warning">${m.affectedRows}</strong></div></div>
+      <div class="col-12"><div class="d-flex justify-content-between border-bottom pb-2"><span>Missing values</span><strong>${m.missingValues}</strong></div></div>
+      <div class="col-12"><div class="d-flex justify-content-between border-bottom pb-2"><span>Invalid ranges</span><strong>${m.invalidRanges}</strong></div></div>
+      <div class="col-12"><div class="d-flex justify-content-between border-bottom pb-2"><span>Invalid data types</span><strong>${m.invalidDataTypes}</strong></div></div>
+      <div class="col-12"><div class="d-flex justify-content-between pt-1"><span>Ready for save for data set</span>${readyBadge}</div></div>
+    `;
+    if (els.validationSummaryCard) els.validationSummaryCard.classList.remove('d-none');
+  };
+
+  const renderValidationErrorsTable = () => {
+    if (!els.validationErrorsTable || !els.validationErrorsCard) return;
+    
+    if (state.validation.totalErrors === 0) {
+      els.validationErrorsCard.classList.add('d-none');
+      return;
+    }
+    
+    els.validationErrorsCard.classList.remove('d-none');
+    
+    if (els.errorsCountBadge) {
+      els.errorsCountBadge.textContent = `${state.validation.totalErrors} issues`;
+      els.errorsCountBadge.className = 'badge bg-danger text-white';
+    }
+    
+    let rowsHtml = '';
+    
+    state.validation.rowDetails.forEach((rowItem, rowIndex) => {
+      rowItem.errors.forEach((err) => {
+        const isEditable = err.column !== 'Duplicate';
+        const val = isEditable ? (err.currentValue || '') : 'N/A';
+        
+        rowsHtml += `
+          <tr class="table-danger" data-row="${rowIndex}" data-col="${err.column}">
+            <td>Row ${rowIndex + 1}</td>
+            <td>${escapeHtml(err.column)}</td>
+            <td class="bg-white px-2 py-1">${escapeHtml(val)}</td>
+            <td class="err-msg text-danger">${escapeHtml(err.message)}</td>
+            <td class="small text-muted">${escapeHtml(err.rule)}</td>
+            <td>${isEditable ? `<button class="btn btn-sm btn-secondary go-to-row-btn" data-row="${rowIndex}">Edit Inline</button>` : ''}</td>
+          </tr>
+        `;
+      });
+    });
+    
+    els.validationErrorsTable.innerHTML = rowsHtml;
+    
+    Array.from(els.validationErrorsTable.querySelectorAll('.go-to-row-btn')).forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const rowIndex = Number(btn.dataset.row);
+        if (!Number.isFinite(rowIndex)) return;
+        
+        // Scroll to the dataset preview area and highlight the row
+        if (els.datasetPreviewArea) {
+          els.datasetPreviewArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          const targetRow = els.datasetPreviewArea.querySelector(`tr[data-row="${rowIndex}"]`);
+          if (targetRow) {
+            targetRow.classList.add('table-warning');
+            setTimeout(() => {
+              targetRow.classList.remove('table-warning');
+            }, 3000);
+            
+            // Try to find the editable cell inside it
+            const colName = btn.closest('tr').dataset.col;
+            if (colName) {
+               const tableHeaders = Array.from(els.datasetPreviewArea.querySelectorAll('th')).map(th => th.textContent.trim());
+               const colIdx = tableHeaders.indexOf(colName);
+               if (colIdx >= 0) {
+                 const td = targetRow.cells[colIdx];
+                 if (td && td.hasAttribute('contenteditable')) {
+                    td.focus();
+                 }
+               }
+            }
+          }
+        }
+      });
+    });
   };
 
   /**
@@ -625,7 +708,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!editableColumns.includes(column)) return;
       const value = String(updated[column] ?? '').trim();
       const isBlank = value === '';
-      if (!isBlank && strategy !== 'fill_custom') return;
+      if (!isBlank) return;
       let replacement = value;
       if (strategy === 'leave_blank') {
         replacement = '';
@@ -651,14 +734,6 @@ document.addEventListener('DOMContentLoaded', () => {
    * Apply all stored column strategies from originalRows to produce the current rawRows.
    * This re-applies every column's strategy from scratch on the original data.
    */
-  const reapplyAllStrategies = () => {
-    let rows = state.originalRows.map((row) => ({ ...row }));
-    for (const [column, config] of Object.entries(state.columnStrategies)) {
-      rows = rows.map((row) => applyStrategyToRow(row, [column], config.strategy, config.custom_value));
-    }
-    return rows;
-  };
-
   const applyPreparationChanges = () => {
     if (!state.rawRows.length) {
       showAlert('Please validate the dataset first.', 'warning');
@@ -676,7 +751,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const strategy = state.preparationOptions.missing_strategy;
     const customValue = state.preparationOptions.custom_value;
 
-    // Store the strategy for each selected column
+    // Store the strategy for each selected column to show in UI
     selectedColumns.forEach((column) => {
       state.columnStrategies[column] = {
         strategy,
@@ -684,8 +759,10 @@ document.addEventListener('DOMContentLoaded', () => {
       };
     });
 
-    // Re-apply ALL column strategies from original data
-    const updatedRows = reapplyAllStrategies();
+    // Incrementally apply the new strategy to the current working data
+    let updatedRows = state.rawRows.map((row) => ({ ...row }));
+    updatedRows = updatedRows.map((row) => applyStrategyToRow(row, selectedColumns, strategy, customValue));
+    
     state.rawRows = updatedRows;
     state.previewRows = updatedRows.map((row) => ({ ...row, __modified: true }));
     updateValidationState();
@@ -713,16 +790,12 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // Build a temporary preview: apply stored strategies + current strategy for selected columns
-    let previewRows = state.originalRows.map((row) => ({ ...row }));
-    // Apply all previously stored strategies
-    for (const [column, config] of Object.entries(state.columnStrategies)) {
-      previewRows = previewRows.map((row) => applyStrategyToRow(row, [column], config.strategy, config.custom_value));
-    }
-    // Apply current (unsaved) strategy for selected columns on top
+    // Build a temporary preview: incrementally apply current strategy on top of working data
+    let previewRows = state.rawRows.map((row) => ({ ...row }));
     previewRows = previewRows.map((row) => applyStrategyToRow(row, selectedColumns, state.preparationOptions.missing_strategy, state.preparationOptions.custom_value));
 
-    renderPreview(previewRows, 'Preparation Preview');
+    state.previewRows = previewRows;
+    renderPreview(state.previewRows, 'Preparation Preview');
     if (els.finalOutputCard) els.finalOutputCard.classList.add('d-none');
     showAlert('Preview generated for the selected strategy. Apply it when ready.', 'info');
   };
@@ -790,9 +863,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (els.finalOutputCard) els.finalOutputCard.classList.add('d-none');
     if (els.datasetPreviewArea) els.datasetPreviewArea.innerHTML = '<div class="p-3 text-muted">Preview dataset appears here after applying preparation.</div>';
 
-    renderValidationSummary(state.scan);
-    renderValidationReport(state.scan);
-    renderErrorTable(state.scan);
+
     renderPreparationOptions();
     renderRecommendations(state.scan);
     updateValidationState();
@@ -979,9 +1050,10 @@ document.addEventListener('DOMContentLoaded', () => {
       showAlert('No dataset loaded to save changes.', 'warning');
       return;
     }
+    state.rawRows = state.previewRows.map((row) => ({ ...row }));
     updateValidationState();
     renderRawPreview();
-    renderPreview(state.rawRows, 'Preparation Preview');
+    renderPreview(state.previewRows, 'Preparation Preview');
     const message = state.validation.totalErrors === 0 ? 'Changes saved. Dataset is valid.' : `Saved changes, but ${state.validation.totalErrors} validation issue(s) remain.`;
     showAlert(message, state.validation.totalErrors === 0 ? 'success' : 'warning');
   });

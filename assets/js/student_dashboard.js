@@ -51,7 +51,6 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="card-body p-4">
             <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
               <div>
-                <p class="text-uppercase text-info fw-semibold small mb-1">Dataset ${index + 1}</p>
                 <h2 class="h5 mb-1">${escapeHtml(item.dataset_name || 'Dataset')}</h2>
                 <p class="text-muted small mb-0">${escapeHtml(item.dataset_description || 'No description provided.')}</p>
               </div>

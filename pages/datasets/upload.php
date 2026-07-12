@@ -105,18 +105,7 @@ $activeSubPage = 'upload';
               </div>
             </div>
 
-            <div class="card border-0 shadow-sm mb-4 d-none" id="validationReportCard">
-              <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                  <div>
-                    <h5 class="card-title mb-1">Dataset Validation Report</h5>
-                    <p class="text-muted small mb-0">The system scanned every row and column for problems.</p>
-                  </div>
-                  <span class="badge bg-success" id="validationStatusBadge">Ready to Clean</span>
-                </div>
-                <div id="validationChecks" class="list-group list-group-flush"></div>
-              </div>
-            </div>
+
           </div>
 
           <div class="col-xl-8">
@@ -133,12 +122,12 @@ $activeSubPage = 'upload';
                   <table class="table table-sm table-hover align-middle mb-0">
                     <thead class="table-light">
                       <tr>
-                        <th class="text-nowrap">Row</th>
-                        <th class="text-nowrap">Column</th>
-                        <th>Problem</th>
-                        <th class="text-nowrap">Detected Value</th>
-                        <th>Recommendation</th>
-                        <th class="text-nowrap">Status</th>
+                        <th class="text-nowrap">Row Number</th>
+                        <th class="text-nowrap">Column Name</th>
+                        <th>Current Value</th>
+                        <th>Issue</th>
+                        <th>Suggested Rule</th>
+                        <th class="text-nowrap">Action</th>
                       </tr>
                     </thead>
                     <tbody id="validationErrorsTable"></tbody>
@@ -184,7 +173,7 @@ $activeSubPage = 'upload';
                   <div id="datasetPreviewArea" class="border rounded-3 p-3 bg-white text-muted" style="min-height: 320px;">Preview dataset appears here after applying preparation.</div>
                 </div>
 
-                <div id="datasetValidationSummary" class="alert alert-warning d-none mb-3 mt-3" role="alert"></div>
+                <div id="datasetValidationSummary" class="alert alert-danger d-none mb-3 mt-3" role="alert">Cannot save dataset. Please resolve all inconsistent data first.</div>
 
                 <div class="row g-3 mt-3">
                   <div class="col-12 d-flex justify-content-between align-items-center">
