@@ -4,135 +4,215 @@ setlocal EnableDelayedExpansion
 :: ========================================
 :: INSTALL.BAT
 :: Automated Installer for PHP Project
+:: Installs Python if not found, then
+:: sets up database and Python packages.
 :: ========================================
-
-:: Set variables
-set "SOURCE_DIR=%~dp0"
-:: Remove trailing backslash from SOURCE_DIR
-if "%SOURCE_DIR:~-1%"=="\" set "SOURCE_DIR=%SOURCE_DIR:~0,-1%"
 
 set "DEST_DIR=C:\xampp\htdocs\data"
 set "PHP_EXE=C:\xampp\php\php.exe"
 set "PROJECT_URL=http://localhost/data"
+set "PYTHON_INSTALLER_URL=https://www.python.org/ftp/python/3.12.7/python-3.12.7-amd64.exe"
+set "PYTHON_INSTALLER=%TEMP%\python_installer.exe"
 
+set "SOURCE_DIR=%~dp0"
+if "%SOURCE_DIR:~-1%"=="\" set "SOURCE_DIR=%SOURCE_DIR:~0,-1%"
+
+echo.
 echo ========================================
-echo Starting Installation...
+echo   Data Science Hub - Installer
 echo ========================================
 echo.
 
-:: 3. Verify XAMPP is installed
+:: ----------------------------------------
+:: Step 1: Verify XAMPP
+:: ----------------------------------------
+echo [1/5] Checking XAMPP...
 if not exist "%PHP_EXE%" (
-    echo [ERROR] XAMPP PHP executable not found at "%PHP_EXE%".
-    echo Please make sure XAMPP is installed in C:\xampp before continuing.
-    echo Installation aborted.
+    echo.
+    echo [ERROR] XAMPP not found at C:\xampp
+    echo         Please install XAMPP first: https://www.apachefriends.org
+    echo.
     pause
     exit /b 1
 )
-echo [OK] XAMPP PHP found.
+echo       XAMPP OK.
 
 :: ----------------------------------------
-:: Detect Python executable
+:: Step 2: Check / Install Python
 :: ----------------------------------------
+echo.
+echo [2/5] Checking Python...
+
 set "PYTHON_EXE="
-where python >nul 2>&1
-if %ERRORLEVEL%==0 (
-    set "PYTHON_EXE=python"
-) else (
-    where python3 >nul 2>&1
-    if %ERRORLEVEL%==0 (
-        set "PYTHON_EXE=python3"
-    ) else (
-        where py >nul 2>&1
-        if %ERRORLEVEL%==0 (
-            set "PYTHON_EXE=py"
+
+:: Check system PATH first
+for %%C in (python python3 py) do (
+    if "!PYTHON_EXE!"=="" (
+        where %%C >nul 2>&1
+        if !ERRORLEVEL!==0 (
+            for /f "delims=" %%V in ('%%C --version 2^>^&1') do (
+                echo       Found: %%V  [%%C]
+            )
+            set "PYTHON_EXE=%%C"
         )
     )
 )
 
-if "%PYTHON_EXE%"=="" (
-    echo [WARNING] Python was not found on PATH.
-    echo Python features (data cleaning, analysis, visualization, prediction) will NOT work.
-    echo Please install Python from https://www.python.org and re-run this installer,
-    echo OR manually run: pip install -r python\requirements.txt
+if "!PYTHON_EXE!"=="" (
+    echo       Python not found. Downloading and installing Python 3.12...
+    echo       This may take a few minutes, please wait...
     echo.
-) else (
-    echo [OK] Python found: %PYTHON_EXE%
-)
 
-:: 6. Prevent copying if the installer is already in the destination folder
+    :: Download Python installer using PowerShell
+    powershell -NoProfile -Command ^
+        "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; " ^
+        "Write-Host '      Downloading Python installer...'; " ^
+        "$wc = New-Object System.Net.WebClient; " ^
+        "$wc.DownloadFile('%PYTHON_INSTALLER_URL%', '%PYTHON_INSTALLER%'); " ^
+        "Write-Host '      Download complete.'"
+
+    if not exist "%PYTHON_INSTALLER%" (
+        echo.
+        echo [ERROR] Failed to download Python installer.
+        echo         Check your internet connection and try again.
+        echo         Or install Python manually from: https://www.python.org
+        echo.
+        pause
+        exit /b 1
+    )
+
+    :: Install Python silently for all users, add to PATH
+    echo       Installing Python (this requires admin rights)...
+    "%PYTHON_INSTALLER%" /quiet ^
+        InstallAllUsers=1 ^
+        PrependPath=1 ^
+        Include_pip=1 ^
+        Include_launcher=1 ^
+        Include_test=0 ^
+        Include_doc=0
+
+    if %ERRORLEVEL% NEQ 0 (
+        echo.
+        echo [ERROR] Python installation failed (exit code: %ERRORLEVEL%).
+        echo         Try running this installer as Administrator.
+        echo.
+        del /f /q "%PYTHON_INSTALLER%" >nul 2>&1
+        pause
+        exit /b 1
+    )
+
+    del /f /q "%PYTHON_INSTALLER%" >nul 2>&1
+    echo       Python installed successfully.
+
+    :: Refresh PATH in current session so we can use python immediately
+    for /f "skip=2 tokens=3*" %%A in ('reg query "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment" /v PATH 2^>nul') do (
+        if "%%B"=="" ( set "SYS_PATH=%%A" ) else ( set "SYS_PATH=%%A %%B" )
+    )
+    for /f "skip=2 tokens=3*" %%A in ('reg query "HKCU\Environment" /v PATH 2^>nul') do (
+        if "%%B"=="" ( set "USR_PATH=%%A" ) else ( set "USR_PATH=%%A %%B" )
+    )
+    set "PATH=!SYS_PATH!;!USR_PATH!;%PATH%"
+
+    :: Now try to find Python again after install
+    for %%C in (python python3 py) do (
+        if "!PYTHON_EXE!"=="" (
+            where %%C >nul 2>&1
+            if !ERRORLEVEL!==0 set "PYTHON_EXE=%%C"
+        )
+    )
+
+    if "!PYTHON_EXE!"=="" (
+        echo.
+        echo [WARNING] Python was installed but could not be found on PATH yet.
+        echo           This is normal on Windows - PATH updates require a new terminal.
+        echo           After this installer finishes, open a NEW Command Prompt and run:
+        echo             python -m pip install -r "%DEST_DIR%\python\requirements.txt"
+        echo.
+        set "PYTHON_EXE=python"
+    ) else (
+        echo       Python is now on PATH: !PYTHON_EXE!
+    )
+) 
+
+:: ----------------------------------------
+:: Step 3: Copy files to destination
+:: ----------------------------------------
+echo.
+echo [3/5] Installing project files...
+
 if /I "%SOURCE_DIR%"=="%DEST_DIR%" (
-    echo [INFO] Installer is already running from the destination folder.
-    echo Skipping file copy process...
+    echo       Already in destination folder. Skipping copy.
     goto RunSetup
 )
 
-:: 5. Check if destination already exists
 if exist "%DEST_DIR%" (
-    echo [WARNING] The destination folder "%DEST_DIR%" already exists.
-    set /p OVERWRITE="Do you want to overwrite it? All existing data will be lost. (Y/N): "
-    
+    echo.
+    echo [WARNING] "%DEST_DIR%" already exists.
+    set /p OVERWRITE="       Overwrite? All existing data will be lost. (Y/N): "
     if /I "!OVERWRITE!"=="Y" (
-        echo Removing existing folder...
+        echo       Removing old installation...
         rmdir /S /Q "%DEST_DIR%"
     ) else (
-        echo Installation cancelled by the user.
+        echo       Installation cancelled.
         pause
         exit /b 0
     )
 )
 
-:: 4. Copy the entire folder to destination
-echo Copying files to "%DEST_DIR%"...
 mkdir "%DEST_DIR%"
 xcopy "%SOURCE_DIR%\*" "%DEST_DIR%\" /E /I /H /Y /Q
 if %ERRORLEVEL% NEQ 0 (
-    echo [ERROR] Failed to copy files to the destination.
+    echo.
+    echo [ERROR] Failed to copy project files.
     pause
     exit /b 1
 )
-echo [OK] Files copied successfully.
+echo       Files copied to %DEST_DIR%
 
 :RunSetup
-:: 7. Change directory to destination and execute setup.php
+:: ----------------------------------------
+:: Step 4: Database setup
+:: ----------------------------------------
 echo.
-echo Running setup script...
+echo [4/5] Setting up database...
 cd /d "%DEST_DIR%"
-
 "%PHP_EXE%" setup.php
-:: 8. Wait until setup.php completes and check exit code
 if %ERRORLEVEL% NEQ 0 (
-    echo [ERROR] Database setup failed. Please check the errors above.
+    echo.
+    echo [ERROR] Database setup failed. See errors above.
     pause
     exit /b 1
 )
+echo       Database ready.
 
 :: ----------------------------------------
-:: Install Python packages
+:: Step 5: Install Python packages
 :: ----------------------------------------
-if not "%PYTHON_EXE%"=="" (
+echo.
+echo [5/5] Installing Python packages (pandas, numpy, scikit-learn, etc.)...
+"!PYTHON_EXE!" -m pip install -r "%DEST_DIR%\python\requirements.txt" --quiet --no-warn-script-location
+if %ERRORLEVEL% NEQ 0 (
     echo.
-    echo Installing Python packages...
-    %PYTHON_EXE% -m pip install -r "%DEST_DIR%\python\requirements.txt" --quiet
-    if %ERRORLEVEL% NEQ 0 (
-        echo [WARNING] Some Python packages failed to install.
-        echo Try running manually: %PYTHON_EXE% -m pip install -r python\requirements.txt
-    ) else (
-        echo [OK] Python packages installed successfully.
-    )
+    echo [WARNING] Some Python packages failed to install.
+    echo           Run manually: !PYTHON_EXE! -m pip install -r python\requirements.txt
+) else (
+    echo       All packages installed.
 )
 
-:: 9. Display professional installation summary
+:: ----------------------------------------
+:: Done
+:: ----------------------------------------
 echo.
 echo ========================================
-echo Installation Complete
+echo   Installation Complete!
 echo ========================================
 echo.
-echo Project Installed To:
-echo %DEST_DIR%
+echo   Project : %DEST_DIR%
+echo   URL     : %PROJECT_URL%
+echo   Python  : !PYTHON_EXE!
 echo.
-echo Open:
-echo %PROJECT_URL%
+echo   Open your browser and go to:
+echo   %PROJECT_URL%
 echo.
-echo You may now close this window.
 pause
 exit /b 0
