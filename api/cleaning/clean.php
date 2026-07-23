@@ -29,7 +29,7 @@ $safeInput = escapeshellarg(realpath($inputPath));
 $outputName = pathinfo($stored, PATHINFO_FILENAME) . '_cleaned.csv';
 $outputPath = $cleanedDir . DIRECTORY_SEPARATOR . $outputName;
 
-$python = 'python';
+$python = PYTHON_EXECUTABLE;
 $script = __DIR__ . '/../../python/clean_dataset.py';
 $cmd = escapeshellcmd($python) . ' ' . escapeshellarg($script) . ' ' . $safeInput . ' ' . escapeshellarg($outputPath);
 

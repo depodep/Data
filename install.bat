@@ -30,6 +30,35 @@ if not exist "%PHP_EXE%" (
 )
 echo [OK] XAMPP PHP found.
 
+:: ----------------------------------------
+:: Detect Python executable
+:: ----------------------------------------
+set "PYTHON_EXE="
+where python >nul 2>&1
+if %ERRORLEVEL%==0 (
+    set "PYTHON_EXE=python"
+) else (
+    where python3 >nul 2>&1
+    if %ERRORLEVEL%==0 (
+        set "PYTHON_EXE=python3"
+    ) else (
+        where py >nul 2>&1
+        if %ERRORLEVEL%==0 (
+            set "PYTHON_EXE=py"
+        )
+    )
+)
+
+if "%PYTHON_EXE%"=="" (
+    echo [WARNING] Python was not found on PATH.
+    echo Python features (data cleaning, analysis, visualization, prediction) will NOT work.
+    echo Please install Python from https://www.python.org and re-run this installer,
+    echo OR manually run: pip install -r python\requirements.txt
+    echo.
+) else (
+    echo [OK] Python found: %PYTHON_EXE%
+)
+
 :: 6. Prevent copying if the installer is already in the destination folder
 if /I "%SOURCE_DIR%"=="%DEST_DIR%" (
     echo [INFO] Installer is already running from the destination folder.
@@ -75,6 +104,21 @@ if %ERRORLEVEL% NEQ 0 (
     echo [ERROR] Database setup failed. Please check the errors above.
     pause
     exit /b 1
+)
+
+:: ----------------------------------------
+:: Install Python packages
+:: ----------------------------------------
+if not "%PYTHON_EXE%"=="" (
+    echo.
+    echo Installing Python packages...
+    %PYTHON_EXE% -m pip install -r "%DEST_DIR%\python\requirements.txt" --quiet
+    if %ERRORLEVEL% NEQ 0 (
+        echo [WARNING] Some Python packages failed to install.
+        echo Try running manually: %PYTHON_EXE% -m pip install -r python\requirements.txt
+    ) else (
+        echo [OK] Python packages installed successfully.
+    )
 )
 
 :: 9. Display professional installation summary

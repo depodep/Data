@@ -28,7 +28,7 @@ if ($abs === null || !is_file($abs)) json_response(['success' => false, 'message
 $chartsDir = __DIR__ . '/../../charts';
 $outDir = $chartsDir . DIRECTORY_SEPARATOR . 'dataset_' . $datasetId;
 
-$python = 'python';
+$python = PYTHON_EXECUTABLE;
 $script = __DIR__ . '/../../python/visualize_dataset.py';
 $cmd = escapeshellcmd($python) . ' ' . escapeshellarg($script) . ' ' . escapeshellarg($abs) . ' ' . escapeshellarg($outDir);
 

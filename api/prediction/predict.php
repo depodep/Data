@@ -39,7 +39,7 @@ if ($sync) {
     if (!is_dir($outDir)) mkdir($outDir, 0755, true);
     $outPath = $outDir . DIRECTORY_SEPARATOR . pathinfo($abs, PATHINFO_FILENAME) . '_' . $target . '_predictions.csv';
 
-    $python = 'python';
+    $python = PYTHON_EXECUTABLE;
     $script = __DIR__ . '/../../python/predict_dataset.py';
     $featureArg = implode(',', $featureColumns);
     $cmd = escapeshellcmd($python) . ' ' . escapeshellarg($script) . ' ' . escapeshellarg($abs) . ' ' . escapeshellarg($target) . ' ' . escapeshellarg($outPath) . ' ' . escapeshellarg($featureArg);

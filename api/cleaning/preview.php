@@ -28,7 +28,7 @@ $options = [];
 if (!empty($_GET['remove_duplicates'])) $options['remove_duplicates'] = filter_var($_GET['remove_duplicates'], FILTER_VALIDATE_BOOLEAN);
 if (!empty($_GET['missing_strategy'])) $options['missing_strategy'] = $_GET['missing_strategy'];
 
-$python = 'python';
+$python = PYTHON_EXECUTABLE;
 $script = __DIR__ . '/../../python/clean_dataset.py';
 $cmd = escapeshellcmd($python) . ' ' . escapeshellarg($script) . ' ' . escapeshellarg(realpath($inputPath)) . ' ' . escapeshellarg($outPath) . ' ' . escapeshellarg(json_encode($options));
 

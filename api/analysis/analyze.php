@@ -26,7 +26,7 @@ if (empty($file)) json_response(['success' => false, 'message' => 'Dataset file 
 $abs = dataset_absolute_path((string) $file);
 if ($abs === null || !is_file($abs)) json_response(['success' => false, 'message' => 'File not readable'], 500);
 
-$python = 'python';
+$python = PYTHON_EXECUTABLE;
 $script = __DIR__ . '/../../python/analyze_dataset.py';
 $cmd = escapeshellcmd($python) . ' ' . escapeshellarg($script) . ' ' . escapeshellarg($abs);
 

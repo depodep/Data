@@ -53,7 +53,7 @@ try {
             $inputPath = $stored ? $uploadsDir . DIRECTORY_SEPARATOR . $stored : null;
             if (empty($inputPath) || !is_file($inputPath)) throw new RuntimeException('Stored CSV missing');
 
-            $python = 'python';
+            $python = PYTHON_EXECUTABLE;
             $script = __DIR__ . '/../python/clean_dataset.py';
             $outName = pathinfo($stored, PATHINFO_FILENAME) . '_cleaned.csv';
             $outPath = $cleanedDir . DIRECTORY_SEPARATOR . $outName;
@@ -77,7 +77,7 @@ try {
             $abs = dataset_absolute_path((string) $file);
             if ($abs === null || !is_file($abs)) throw new RuntimeException('File not readable');
 
-            $python = 'python';
+            $python = PYTHON_EXECUTABLE;
             $script = __DIR__ . '/../python/analyze_dataset.py';
             $cmd = escapeshellcmd($python) . ' ' . escapeshellarg($script) . ' ' . escapeshellarg($abs);
             logStd('Running: ' . $cmd);
@@ -97,7 +97,7 @@ try {
 
             $chartsDir = __DIR__ . '/../charts';
             $outDir = $chartsDir . DIRECTORY_SEPARATOR . 'dataset_' . $datasetId;
-            $python = 'python';
+            $python = PYTHON_EXECUTABLE;
             $script = __DIR__ . '/../python/visualize_dataset.py';
             $cmd = escapeshellcmd($python) . ' ' . escapeshellarg($script) . ' ' . escapeshellarg($abs) . ' ' . escapeshellarg($outDir);
             logStd('Running: ' . $cmd);
@@ -124,7 +124,7 @@ try {
             if (!is_dir($outDir)) mkdir($outDir, 0755, true);
             $outPath = $outDir . DIRECTORY_SEPARATOR . pathinfo($abs, PATHINFO_FILENAME) . '_' . $target . '_predictions.csv';
 
-            $python = 'python';
+            $python = PYTHON_EXECUTABLE;
             $script = __DIR__ . '/../python/predict_dataset.py';
             $featureArg = implode(',', is_array($featureColumns) ? $featureColumns : ['Attendance']);
             $cmd = escapeshellcmd($python) . ' ' . escapeshellarg($script) . ' ' . escapeshellarg($abs) . ' ' . escapeshellarg($target) . ' ' . escapeshellarg($outPath) . ' ' . escapeshellarg($featureArg);
