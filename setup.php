@@ -82,7 +82,6 @@ $mysqli->select_db($dbName);
 
 echo "Importing SQL...\n";
 
-// Execute multi query
 if ($mysqli->multi_query($sqlContent)) {
     do {
         // Store first result set

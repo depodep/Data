@@ -1,0 +1,14 @@
+"Student ID","Student Name",Course,"Year Level",Section,Subject,"Quiz Score","Midterm Score","Final Score",Attendance
+41382,"John Dela Cruz",BSIT,1,A,"Programming 1",88,85,90,96
+52714,"Maria Santos",BSIT,1,A,"Programming 1",91,89,93,98
+39581,"Angela Flores",BSIT,1,A,"Programming 1",95,94,96,99
+58210,"Carl Bautista",BSIT,1,A,"Programming 1",85,84,88,95
+28465,"Sophia Navarro",BSIT,2,B,"Database Systems",88,86,89,95
+93504,"Adrian Gutierrez",BSIT,2,B,"Database Systems",70,74,76,87
+87391,"Ethan Morales",BSIT,2,B,"Database Systems",84,82,86,94
+53168,"Camille Herrera",BSIT,2,B,"Database Systems",90,91,93,98
+75830,"Nathan Salazar",BSIT,3,C,"Web Development",94,93,95,99
+96354,"Ian Alvarez",BSIT,3,C,"Web Development",85,87,88,95
+54792,"Patrick Lim",BSIT,3,C,"Web Development",73,76,78,88
+83261,"Faith Velasco",BSIT,3,C,"Web Development",96,95,97,100
+71943,"Denise Cabrera",BSIT,3,C,"Web Development",89,90,92,97
